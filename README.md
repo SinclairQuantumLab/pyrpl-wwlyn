@@ -21,28 +21,23 @@ The official PyRPL website address is [http://pyrpl.readthedocs.io/](http://pyrp
 ## Installation
 The easiest and fastest way to get PyRPL is to download and execute the [precompiled executable for windows](https://sourceforge.net/projects/pyrpl/files/latest/download). This option requires no extra programs to be installed on the computer.
 
-If instead you would like to use and/or modify the source code, make sure you have an
-installation of Python (2.7, 3.4, 3.5, or 3.6). If you are new to Python or unexperienced with fighting installation issues, it is recommended to install the [Anaconda](https://www.continuum.io/downloads) Python distribution, which allows to install all PyRPL dependencies via
-```
-conda install numpy scipy paramiko pandas nose pip pyqt qtpy pyqtgraph pyyaml nbconvert
-```
-Check [this documentation section](http://pyrpl.readthedocs.io/en/latest/user_guide/installation/common_problems.html#anaconda-problems) for hints if you are unable to execute conda in a terminal. Alternatively, if you prefer creating a virtual environment for pyrpl, do so with the following two commands
-```
-conda create -y -n pyrpl-env numpy scipy paramiko pandas nose pip pyqt qtpy pyqtgraph pyyaml nbconvert
-activate pyrpl-env
-```
-If you are not using Anaconda, you must manually install the python package [PyQt5](https://pypi.python.org/pypi/PyQt5) or [PyQt4](https://pypi.python.org/pypi/PyQt4), which requires a working C compiler installation on the system.
+This checkout targets Python 3.9. From the repository root, the recommended
+installation is:
 
-Next, clone (if you have a [git client](https://git-scm.com/downloads) installed - recommended option) the pyrpl repository to your computer with 
+```bash
+uv sync --locked
 ```
-git clone https://github.com/lneuhaus/pyrpl.git
-```
-or [download and extract](https://github.com/lneuhaus/pyrpl/archive/master.zip) (if you do not want to install git on your computer) the repository. 
 
-Install PyRPL by navigating with the command line terminal (the one where the pyrpl-env environment is active in case you are using anaconda) into the pyrpl root directory and typing
+Alternatively, create the provided Conda environment; it installs this checkout
+and reads the same dependency constraints from `pyproject.toml`:
+
+```bash
+conda env create -f pyrpl.yml
+conda activate pyrpl-env3
 ```
-python setup.py develop
-```
+
+With an existing Python 3.9 virtual environment, `python -m pip install -e .`
+is also supported.
 
 ## Quick start
 First, hook up your Red Pitaya / STEMlab to a LAN accessible from your computer (follow the instructions for this on redpitya.com and make sure you can access your Red Pitaya with a web browser by typing its ip-address /  hostname into the address bar).
@@ -51,6 +46,13 @@ In a command line terminal, type
 python -m pyrpl your_configuration_name
 ```
 A GUI should open, let you configure the redpitaya device you would like to use, and you can start playing around with pyrpl. Different strings for 'your_configuration_name' create different configurations that will be automatically remembered by PyRPL, for example if you have several different redpitayas. Different RedPitayas with different configuration names can be run simultaneously in separate terminals.
+
+Red Pitaya OS 2 and 3 are detected automatically. With `reloadfpga=True`,
+PyRPL loads the bundled, matching bitstream and device-tree overlay through
+the OS overlay manager; older OS images use `/dev/xdevcfg` only when it is a
+real character device. To use a board-specific build, pass both `filename`
+and `dtbo_filename` to `Pyrpl`. The bundled image targets the Z10-based
+STEMlab 125-14; Z20 boards require their own matching pair.
 
 ## Issues
 We collect a list of common problems on the [documenation website](http://pyrpl.readthedocs.io/en/latest/user_guide/installation/common_problems.html). If you do not find your problem listed there, please report all problems or wishes as new issues on [this page](https://github.com/lneuhaus/pyrpl/issues), so we can fix it and improve the future user experience.
