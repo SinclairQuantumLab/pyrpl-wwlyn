@@ -124,7 +124,7 @@ class Trig(FilterModule):
         self.armed = True
 
     def output_signal_to_phase(self, v):
-        """
+        r"""
         Converts the output signal value from volts to degrees.
 
         This is useful when :py:attr:`Trig.output_signal` is set to

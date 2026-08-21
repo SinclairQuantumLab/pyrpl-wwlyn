@@ -3,6 +3,13 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
+.. warning::
+
+   These inherited Sphinx pages include historical upstream installation and
+   release instructions for older Python versions. For this fork, the root
+   ``README.md``, ``pyproject.toml``, and ``uv.lock`` are authoritative. Do not
+   use the old SourceForge binaries or ``setup.py`` commands for this checkout.
+
 *******************
 What is PyRPL?
 *******************

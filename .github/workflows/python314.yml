@@ -1,0 +1,66 @@
+name: CPython 3.14
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  offline-validation:
+    runs-on: windows-latest
+    timeout-minutes: 20
+    env:
+      NOSE_IGNORE_CONFIG_FILES: "1"
+      PYRPL_USER_DIR: ${{ runner.temp }}\pyrpl-user-dir
+      PYTHONWARNINGS: error::SyntaxWarning
+      QT_QPA_PLATFORM: offscreen
+      REDPITAYA_HOSTNAME: _FAKE_
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.14"
+
+      - name: Install uv
+        run: python -m pip install uv==0.12.0
+
+      - name: Check lock and environment
+        run: |
+          $ErrorActionPreference = "Stop"
+          $PSNativeCommandUseErrorActionPreference = $true
+          uv lock --check
+          uv sync --locked
+          uv pip check
+
+      - name: Compile and run offline regressions
+        run: |
+          $ErrorActionPreference = "Stop"
+          $PSNativeCommandUseErrorActionPreference = $true
+          uv run --no-sync python -m compileall -q -f pyrpl
+          uv run --no-sync python -m unittest pyrpl.test.test_redpitaya_fpga_loader pyrpl.test.test_python314_compatibility pyrpl.test.test_ipykernel_compatibility
+          uv run --no-sync nosetests pyrpl/test/test_memory.py pyrpl/test/test_proxyproperty.py pyrpl/test/test_attribute.py
+
+      - name: Build wheel
+        run: uv build --wheel
+
+      - name: Inspect and install wheel
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = "Stop"
+          $PSNativeCommandUseErrorActionPreference = $true
+          $wheel = (Get-ChildItem dist -Filter *.whl | Select-Object -First 1).FullName
+          uv run --no-sync python pyrpl/test/verify_wheel.py $wheel
+          uv venv .wheel-venv --python 3.14
+          uv pip install --python .wheel-venv\Scripts\python.exe $wheel
+          uv pip check --python .wheel-venv\Scripts\python.exe
+          $wheelPython = (Resolve-Path .wheel-venv\Scripts\python.exe).Path
+          $wheelCli = (Resolve-Path .wheel-venv\Scripts\sinclair-pyrpl-wwlyn.exe).Path
+          Push-Location $env:RUNNER_TEMP
+          try {
+            & $wheelPython -c "import importlib.metadata, pathlib, pyrpl, sys; assert pyrpl.__version__ == importlib.metadata.version('sinclair-pyrpl-wwlyn'); assert pathlib.Path(pyrpl.__file__).is_relative_to(pathlib.Path(sys.prefix))"
+            & $wheelCli --help
+          }
+          finally {
+            Pop-Location
+          }

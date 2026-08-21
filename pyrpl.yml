@@ -2,8 +2,8 @@ name: pyrpl-env3
 channels:
   - conda-forge
 dependencies:
-  - python=3.9
+  - python=3.14
   - pip
   - pip:
       # Install this checkout and use pyproject.toml as the dependency source.
-      - -e .
+      - -e .[test]

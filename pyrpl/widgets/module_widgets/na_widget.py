@@ -327,5 +327,4 @@ class MyGraphicsWindow(pg.GraphicsLayoutWidget):
                 self.parent_widget.attribute_widgets['zeros'].set_selected(-1)
         except BaseException as e:
             self.parent_widget.module._logger.error(e)
-        finally:
-            return super(MyGraphicsWindow, self).mousePressEvent(*args, **kwds)
+        return super(MyGraphicsWindow, self).mousePressEvent(*args, **kwds)

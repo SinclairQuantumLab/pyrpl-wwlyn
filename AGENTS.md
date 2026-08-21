@@ -17,25 +17,39 @@ work log.
   tokens.
 - Keep the README files task-oriented. Put enduring contributor constraints
   here and FPGA build/asset provenance in `pyrpl/fpga/README.md`.
-- Do not create `.agents/` until a separate substantial runbook or release
-  procedure is needed. If one is added, link it from this file and keep one
-  authoritative location for each fact.
+- Detailed, historical upgrade and reproduction records live under
+  [`.agents/`](.agents/README.md). Keep this file as the concise statement of
+  current constraints; keep one-time chronology, per-file inventories, and
+  historical validation evidence in the applicable upgrade changelog.
 
 ## Supported environment and dependencies
 
-- This checkout targets CPython `3.9.*`. `.python-version`, `pyproject.toml`,
-  `uv.lock`, and `pyrpl.yml` must remain aligned.
+- This checkout targets CPython `3.14.*` on x86_64 Windows.
+  `.python-version`, `pyproject.toml`, `uv.lock`, and `pyrpl.yml` must remain
+  aligned.
 - Use `uv sync --locked` to create/synchronize the environment and `uv run`
   for repository commands. `pyproject.toml` and `uv.lock` are the dependency
   sources of truth; `pyrpl.yml` is only a Conda bootstrap around this checkout.
-- Preserve these intentional compatibility bounds unless the corresponding
-  legacy APIs are modernized and tested:
-  - NumPy `>=1.23,<1.24` for `np.float`, `np.int`, and `np.complex` usage.
-  - SciPy `>=1.9,<1.12` for `scipy.misc.derivative`.
-  - lmfit `>=1.0.1,<1.3.3`, compatible with the NumPy bound.
-- Keep `netifaces2`, which supplies the `netifaces` import and a Windows
-  CPython 3.9 wheel. The original `netifaces` package is a Windows build
-  blocker here.
+- Preserve the tested major-version bounds in `pyproject.toml`. In particular,
+  NumPy `>=2.3.2,<3` and SciPy `>=1.16.1,<2` are the first supported lines
+  with Windows CPython 3.14 wheels; lmfit is `>=1.3.4,<2`.
+- Keep `netifaces2`, which supplies the `netifaces` import through a Windows
+  stable-ABI wheel validated on CPython 3.14. The original `netifaces` package
+  is a Windows build blocker here.
+- Keep PyQt5 `>=5.15.11,<6`. Its stable-ABI bindings and the resolved native
+  PyQt5-sip wheel are validated on CPython 3.14; a PyQt6 migration is not part
+  of this upgrade.
+- Keep `qasync>=0.28,<0.29`, which replaces abandoned Quamash. Exercise the
+  Qt event-loop/Future regression test when changing it. Plain scripts and the
+  CLI use the PyRPL-owned qasync loop; modern kernels reuse their running host
+  loop and a process-lifetime Qt pump task; terminal IPython keeps its
+  externally driven Qt loop. Never replace an active ipykernel loop during
+  `import pyrpl`.
+- Keep Paramiko at `>=4,<6`; older releases contain syntax that is invalid on
+  Python 3.14. Direct runtime imports must not rely on transitive dependencies.
+- The legacy suite uses the `nosetests` executable from
+  `nose-ng>=1.4.3,<2`; the original Nose imports removed stdlib APIs on modern
+  Python. Keep the test dependency out of runtime requirements.
 - After dependency changes, regenerate `uv.lock`, then run `uv lock --check`,
   `uv sync --locked --dry-run`, and `uv pip check`.
 
@@ -53,8 +67,9 @@ work log.
   change.
 - `README.md` is the current installation and quick-start guide.
   `pyrpl/fpga/README.md` owns FPGA provenance and build details.
-  `Documentation.md` contains historical instructions; its manual dependency
-  monkeypatching and site-packages replacement advice is not authoritative.
+  `Documentation.md` and inherited Sphinx pages contain historical
+  instructions; their old dependency, `setup.py`, and release advice is not
+  authoritative. Keep the archive warning in `docs/source/index.rst`.
 
 ## Safe offline validation
 
@@ -62,13 +77,21 @@ Set Qt to offscreen for tests that import the GUI stack:
 
 ```powershell
 $env:QT_QPA_PLATFORM = "offscreen"
+$env:NOSE_IGNORE_CONFIG_FILES = "1"
+$env:REDPITAYA_HOSTNAME = "_FAKE_"
+$pyrplTestDir = Join-Path ([IO.Path]::GetTempPath()) `
+    ("pyrpl-314-" + [guid]::NewGuid())
+New-Item -ItemType Directory -Path $pyrplTestDir | Out-Null
+$env:PYRPL_USER_DIR = $pyrplTestDir
 uv lock --check
-uv run --python 3.9 python -m unittest pyrpl.test.test_redpitaya_fpga_loader
-uv run --python 3.9 python -m compileall -q -f pyrpl
+uv run --python 3.14 python -m unittest pyrpl.test.test_redpitaya_fpga_loader pyrpl.test.test_python314_compatibility pyrpl.test.test_ipykernel_compatibility
+uv run --python 3.14 nosetests pyrpl/test/test_memory.py pyrpl/test/test_proxyproperty.py pyrpl/test/test_attribute.py
+uv run --python 3.14 python -m compileall -q -f pyrpl
 ```
 
-- Use Nose for the legacy suite. Pytest does not honor all of its Nose-style
-  `setUpAll`/`tearDownAll` conventions and can report false setup failures.
+- Use Nose NG's `nosetests` command for the legacy suite. Pytest does not honor
+  all of its Nose-style `setUpAll`/`tearDownAll` conventions and can report
+  false setup failures.
 - Before tests that use `MemoryTree`, set `PYRPL_USER_DIR` to a newly created
   temporary directory so they cannot create or delete normal user configs.
   Set `REDPITAYA_HOSTNAME=_FAKE_` for broader offline runs that might otherwise
@@ -77,6 +100,10 @@ uv run --python 3.9 python -m compileall -q -f pyrpl
   hardware setup, can change outputs, or can hang while waiting for a device.
 - Build a wheel after packaging or FPGA-asset changes and inspect it for the
   package, configuration, bitstream, DTBO, and CLI entry point.
+- `.github/workflows/python314.yml` is the authoritative automated check. The
+  older Travis, AppVeyor, Azure, Jenkins, Docker, and Makefile automation is
+  historical upstream infrastructure; do not treat its legacy Python matrices
+  or live-board jobs as validation for this fork.
 
 ## Red Pitaya and FPGA safety
 

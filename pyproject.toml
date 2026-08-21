@@ -1,35 +1,57 @@
 [project]
 name = "sinclair-pyrpl-wwlyn"
-version = "0.1.0"
-description = "Add your description here"
+version = "0.9.5.0"
+description = "Sinclair Lab PyRPL fork for Red Pitaya DSP and lockbox control"
 readme = "README.md"
 authors = [
     { name = "Sinclair Lab", email = "sinclairquantumlab@gmail.com" }
 ]
-requires-python = "==3.9.*"
-dependencies = [
-    "scp",
-    "matplotlib",
-    # Keep the deprecated scipy.misc.derivative API used by the lockbox code.
-    "scipy>=1.9,<1.12",
-    "pyyaml",
-    "pandas",
-    "pyqtgraph",
-    # PyRPL still uses the legacy np.float/np.int/np.complex aliases.
-    "numpy>=1.23,<1.24",
-    "paramiko>=2.0",
-    "nose>=1.0",
-    "pyqt5",
-    "qtpy",
-    "nbconvert",
-    "jupyter-client",
-    # Drop-in fork with Windows CPython 3.9 wheels.
-    "netifaces2>=0.0.22",
-    # lmfit 1.3.3+ requires NumPy 1.24+, which conflicts with PyRPL's aliases.
-    "lmfit>=1.0.1,<1.3.3",
-    "quamash",
-    "ipykernel>=6.31.0",
+license = "GPL-3.0-or-later"
+license-files = ["LICENSE"]
+keywords = ["red-pitaya", "fpga", "lockbox", "instrumentation"]
+requires-python = "==3.14.*"
+classifiers = [
+    "Operating System :: Microsoft :: Windows",
+    "Programming Language :: Python :: 3 :: Only",
+    "Programming Language :: Python :: 3.14",
+    "Topic :: Scientific/Engineering",
 ]
+dependencies = [
+    "scp>=0.15,<1",
+    "matplotlib>=3.10.5,<4",
+    "scipy>=1.16.1,<2",
+    "pyyaml>=6.0.3,<7",
+    "pandas>=2.3.3,<4",
+    "pyqtgraph>=0.14,<1",
+    "numpy>=2.3.2,<3",
+    "paramiko>=4,<6",
+    "pyqt5>=5.15.11,<6",
+    "qtpy>=2.4.3,<3",
+    "nbconvert>=7.16,<8",
+    "jupyter-client>=8.6,<9",
+    # Drop-in fork that provides the netifaces import on modern Windows.
+    "netifaces2>=0.0.22,<1",
+    "lmfit>=1.3.4,<2",
+    # Maintained Qt/asyncio bridge replacing the abandoned quamash package.
+    "qasync>=0.28,<0.29",
+    "ipykernel>=6.31,<8",
+]
+
+[project.optional-dependencies]
+test = [
+    "nose-ng>=1.4.3,<2",
+]
+
+[dependency-groups]
+dev = [
+    # Maintained drop-in Nose runner; legacy Nose itself imports removed stdlib APIs.
+    "nose-ng>=1.4.3,<2",
+]
+
+[project.urls]
+Repository = "https://github.com/SinclairQuantumLab/pyrpl-wwlyn"
+Issues = "https://github.com/SinclairQuantumLab/pyrpl-wwlyn/issues"
+Documentation = "https://pyrpl.readthedocs.io/"
 
 [project.scripts]
 sinclair-pyrpl-wwlyn = "pyrpl.__main__:main"

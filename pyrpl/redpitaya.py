@@ -717,19 +717,25 @@ class RedPitaya(object):
         return self.installserver()
     
     def endserver(self):
+        ssh = getattr(self, 'ssh', None)
+        if ssh is None:
+            self._serverrunning = False
+            return
         try:
-            self.ssh.ask('\x03') #exit running server application
-        except:
+            ssh.ask('\x03')  # exit running server application
+            if 'pitaya' in ssh.ask():
+                self.logger.debug('>')  # formerly 'console ready'
+            sleep(self.parameters['delay'])
+            # make sure no other pyrpl_server blocks the port
+            ssh.ask('killall ' + self.parameters['monitor_server_name'])
+        except Exception:
             self.logger.exception("Server not responding...")
-        if 'pitaya' in self.ssh.ask():
-            self.logger.debug('>') # formerly 'console ready'
-        sleep(self.parameters['delay'])
-        # make sure no other pyrpl_server blocks the port
-        self.ssh.ask('killall ' + self.parameters['monitor_server_name'])
-        self._serverrunning = False
+        finally:
+            self._serverrunning = False
         
     def endclient(self):
-        del self.client
+        if not hasattr(self, 'client'):
+            return
         self.client = None
 
     def start(self):
@@ -745,7 +751,10 @@ class RedPitaya(object):
         self.endclient()
 
     def end_ssh(self):
-        self.ssh.channel.close()
+        ssh = getattr(self, 'ssh', None)
+        channel = getattr(ssh, 'channel', None)
+        if channel is not None:
+            channel.close()
 
     def end_all(self):
         self.end()

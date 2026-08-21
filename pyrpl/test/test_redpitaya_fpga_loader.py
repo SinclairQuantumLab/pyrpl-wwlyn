@@ -326,6 +326,21 @@ class TestRedPitayaFpgaLoader(unittest.TestCase):
                       str(raised.exception))
         self.assertNotIsInstance(raised.exception, ZeroDivisionError)
 
+    def test_cleanup_without_ssh_is_idempotent(self):
+        device = RedPitaya.__new__(RedPitaya)
+        device.logger = logging.getLogger(__name__)
+        device.parameters = {
+            'delay': 0,
+            'monitor_server_name': 'pyrpl_server',
+        }
+        device.client = None
+
+        device.end_all()
+        device.end_all()
+
+        self.assertFalse(device._serverrunning)
+        self.assertIsNone(device.client)
+
 
 if __name__ == '__main__':
     unittest.main()

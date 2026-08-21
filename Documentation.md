@@ -1,4 +1,9 @@
 
+> **Historical reference:** This file preserves older installation notes,
+> including Python 3.9 workarounds that are not valid for this fork. Use the
+> root `README.md`, `pyproject.toml`, and `uv.lock` for the supported CPython
+> 3.14 installation and dependency workflow.
+
 - [FPGA PID Documentation](#fpga-pid-documentation)
   - [Prerequisites](#prerequisites)
     - [Quick Start with RedPitaya](#quick-start-with-redpitaya)

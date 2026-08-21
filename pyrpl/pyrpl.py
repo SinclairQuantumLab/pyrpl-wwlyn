@@ -201,7 +201,7 @@ Syntax for launching PyRPL
 Rectangular brackets [] indicate optional parameters.
 
 Syntax for binary executable:
-    pyrpl [key1=value1 [key2=value2 [key3=value3 [...]]]]
+    sinclair-pyrpl-wwlyn [key1=value1 [key2=value2 [key3=value3 [...]]]]
 
 Syntax with python installation:
     python -m pyrpl [key1=value1 [key2=value2 [key3=value3 [...]]]]

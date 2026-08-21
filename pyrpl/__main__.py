@@ -7,9 +7,11 @@ a Pyrpl instance with the config file
 """
 import sys
 try:
-    from pyrpl import Pyrpl, APP, help_message
-except:
-    from . import Pyrpl, APP, help_message
+    from pyrpl import Pyrpl, help_message
+    from pyrpl.async_utils import LOOP
+except ImportError:
+    from . import Pyrpl, help_message
+    from .async_utils import LOOP
 
 def main():
     if any(arg in ('-h', '--help') for arg in sys.argv[1:]):
@@ -17,7 +19,7 @@ def main():
         return
 
     if len(sys.argv) > 3:
-        print("usage: python run_pyrpl.py [[config=]config_file_name] "
+        print("usage: sinclair-pyrpl-wwlyn [[config=]config_file_name] "
               "[source=config_file_template] [hostname=hostname/ip]")
     kwargs = dict()
     for i, arg in enumerate(sys.argv):
@@ -39,7 +41,8 @@ def main():
 
     print("Calling Pyrpl(**%s)"%str(kwargs))
     PYRPL = Pyrpl(**kwargs)
-    APP.exec_()
+    if not LOOP.is_running():
+        LOOP.run_forever()
 
 
 if __name__ == '__main__':

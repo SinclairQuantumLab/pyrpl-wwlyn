@@ -13,6 +13,7 @@ curves/
 # Distribution / packaging
 .Python
 env/
+.venv/
 build/
 develop-eggs/
 dist/
@@ -70,6 +71,7 @@ htmlcov/
 .coverage.*
 cover/*
 .cache
+.pytest_cache/
 nosetests.xml
 coverage.xml
 *,cover

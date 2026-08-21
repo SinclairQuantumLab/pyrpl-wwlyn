@@ -1,91 +1,118 @@
-[<img src="http://pyrpl.readthedocs.io/en/latest/_static/logo.png" width="250" alt="PyRPL">](http://www.pyrpl.org/)
+# Sinclair PyRPL fork
 
-[![travis status](https://travis-ci.org/lneuhaus/pyrpl.svg?branch=master "Travisstatus")](https://travis-ci.org/lneuhaus/pyrpl)
-[![appveyor status](https://ci.appveyor.com/api/projects/status/wv2acmg869acg5yy?svg=true)](https://ci.appveyor.com/project/lneuhaus/pyrpl)
-[![code coverage](https://codecov.io/github/lneuhaus/pyrpl/coverage.svg?branch=master "Code coverage")](https://codecov.io/gh/lneuhaus/pyrpl)
-[![Python versions on PyPI](https://img.shields.io/pypi/pyversions/pyrpl.svg)](https://pypi.python.org/pypi/pyrpl/)
-[![PyRPL version on PyPI](https://img.shields.io/pypi/v/pyrpl.svg "PyRPL on PyPI")](https://pypi.python.org/pypi/pyrpl/)
-[![Download pyrpl](https://img.shields.io/sourceforge/dt/pyrpl.svg)](https://sourceforge.net/projects/pyrpl/files/)
-[![Documentation Status](https://readthedocs.org/projects/pyrpl/badge/?version=latest)](http://pyrpl.readthedocs.io/en/latest/)
-[![join chat on gitter](https://badges.gitter.im/JoinChat.svg "Join chat on gitter")](https://gitter.im/lneuhaus/pyrpl)
-[![License](https://img.shields.io/pypi/l/pyrpl.svg)](https://github.com/lneuhaus/pyrpl/blob/master/LICENSE)
+PyRPL (Python Red Pitaya Lockbox) turns a Red Pitaya into a DSP, measurement,
+and feedback-control platform. This Sinclair Lab fork targets CPython `3.14.*`
+on 64-bit Windows and packages the `pyrpl` application as
+`sinclair-pyrpl-wwlyn`.
 
-[![Download PyRPL](https://a.fsdn.com/con/app/sf-download-button)](https://sourceforge.net/projects/pyrpl/files/)
-[![LGPLv3](https://www.gnu.org/graphics/gplv3-88x31.png)](https://www.gnu.org/licenses/gpl.html)
-
-PyRPL (Python RedPitaya Lockbox) turns your RedPitaya into a powerful DSP device, especially suitable as a digital lockbox and measurement device in quantum optics experiments.
-
-## Website
-The official PyRPL website address is [http://pyrpl.readthedocs.io/](http://pyrpl.readthedocs.io). The information on the website is more up-to-date than in this readme.
+This repository is the source of truth for the fork. Upstream SourceForge
+executables and the separate PyPI distribution named `pyrpl` do not contain
+these changes.
 
 ## Installation
-The easiest and fastest way to get PyRPL is to download and execute the [precompiled executable for windows](https://sourceforge.net/projects/pyrpl/files/latest/download). This option requires no extra programs to be installed on the computer.
 
-This checkout targets Python 3.9. From the repository root, the recommended
-installation is:
+Install [uv](https://docs.astral.sh/uv/), then run this from the repository
+root:
 
-```bash
+```powershell
 uv sync --locked
 ```
 
-Alternatively, create the provided Conda environment; it installs this checkout
-and reads the same dependency constraints from `pyproject.toml`:
+That creates `.venv` with CPython 3.14 and the exact versions in `uv.lock`.
+For an existing Python 3.14 environment, editable installs are also supported:
 
-```bash
+```powershell
+python -m pip install -e ".[test]"
+```
+
+The optional Conda bootstrap installs this checkout using the same project
+metadata:
+
+```powershell
 conda env create -f pyrpl.yml
 conda activate pyrpl-env3
 ```
 
-With an existing Python 3.9 virtual environment, `python -m pip install -e .`
-is also supported.
+Restart any Jupyter kernel that imported PyRPL before upgrading so it uses the
+new interpreter and source. PyRPL reuses a modern kernel's asyncio loop instead
+of replacing it and pumps Qt events on that loop, so top-level `await` and
+Qt-timer-backed PyRPL futures remain responsive.
 
 ## Quick start
-First, hook up your Red Pitaya / STEMlab to a LAN accessible from your computer (follow the instructions for this on redpitya.com and make sure you can access your Red Pitaya with a web browser by typing its ip-address /  hostname into the address bar).
-In a command line terminal, type
+
+Connect the Red Pitaya or STEMlab to a reachable LAN, then launch a named PyRPL
+configuration:
+
+```powershell
+uv run sinclair-pyrpl-wwlyn your_configuration_name
 ```
-python -m pyrpl your_configuration_name
-```
-A GUI should open, let you configure the redpitaya device you would like to use, and you can start playing around with pyrpl. Different strings for 'your_configuration_name' create different configurations that will be automatically remembered by PyRPL, for example if you have several different redpitayas. Different RedPitayas with different configuration names can be run simultaneously in separate terminals.
+
+The equivalent module command is
+`uv run python -m pyrpl your_configuration_name`. Configuration names keep
+device settings separate, including when multiple boards are used.
 
 Red Pitaya OS 2 and 3 are detected automatically. With `reloadfpga=True`,
-PyRPL loads the bundled, matching bitstream and device-tree overlay through
-the OS overlay manager; older OS images use `/dev/xdevcfg` only when it is a
-real character device. To use a board-specific build, pass both `filename`
-and `dtbo_filename` to `Pyrpl`. The bundled image targets the Z10-based
-STEMlab 125-14; Z20 boards require their own matching pair.
+PyRPL loads the bundled matching bitstream and device-tree overlay; a legacy OS
+uses `/dev/xdevcfg` only when it is a real character device. The bundled assets
+target the Z10 STEMlab 125-14 and must not be loaded on a Z20 board. See
+[`pyrpl/fpga/README.md`](pyrpl/fpga/README.md) before changing or loading FPGA
+assets.
 
-## Issues
-We collect a list of common problems on the [documenation website](http://pyrpl.readthedocs.io/en/latest/user_guide/installation/common_problems.html). If you do not find your problem listed there, please report all problems or wishes as new issues on [this page](https://github.com/lneuhaus/pyrpl/issues), so we can fix it and improve the future user experience.
+## Safe offline verification
 
-## Unit test
-If you want to check whether PyRPL works correctly on your machine, navigate with a command line terminal into the pyrpl root directory and type the  following commands (by substituting the ip-address / hostname of your Red Pitaya, of course)
-```
-set REDPITAYA_HOSTNAME=your_redpitaya_ip_address
-nosetests
-```
-All tests should take about 3 minutes and finish without failures or errors. If there are errors, please report the console output as an issue (see the section "Issues" below for detailed explanations).
+The maintained `nose-ng` package supplies the `nosetests` command used by the
+legacy tests. In PowerShell, isolate configuration writes and disable hardware
+discovery before running the maintained offline checks:
 
-## Next steps / documentation
-The full html documentation is hosted at [http://pyrpl.readthedocs.io](http://pyrpl.readthedocs.io). Alternatively, you can download a .pdf version at [https://media.readthedocs.org/pdf/pyrpl/latest/pyrpl.pdf](https://media.readthedocs.org/pdf/pyrpl/latest/pyrpl.pdf). We are still in the process of creating an fully up-to-date version of the documentation of the current code. If the current documentation is wrong or insufficient, please post an [issue](https://github.com/lneuhaus/pyrpl/issues/new) and we will prioritize documenting the part of code you need.
+```powershell
+$env:QT_QPA_PLATFORM = "offscreen"
+$env:NOSE_IGNORE_CONFIG_FILES = "1"
+$env:REDPITAYA_HOSTNAME = "_FAKE_"
+$pyrplTestDir = Join-Path ([IO.Path]::GetTempPath()) `
+    ("pyrpl-314-" + [guid]::NewGuid())
+New-Item -ItemType Directory -Path $pyrplTestDir | Out-Null
+$env:PYRPL_USER_DIR = $pyrplTestDir
 
-## Updates
-Since PyRPL is continuously improved, you should install upgrades if you expect bugfixes. If you installed PyRPL by using pip, just type
-```
-pip install --upgrade pyrpl
+uv lock --check
+uv sync --locked --dry-run
+uv pip check
+uv run --no-sync python -m compileall -q -f pyrpl
+uv run --no-sync python -m unittest `
+    pyrpl.test.test_redpitaya_fpga_loader `
+    pyrpl.test.test_python314_compatibility `
+    pyrpl.test.test_ipykernel_compatibility
+uv run --no-sync nosetests `
+    pyrpl/test/test_memory.py `
+    pyrpl/test/test_proxyproperty.py `
+    pyrpl/test/test_attribute.py
 ```
 
-If instead you have clonded the github repository (recommended for bleeding-edge updates), navigate into the pyrpl root directory on your local harddisk computer and type
-```
-git pull
-```
+Do not run the entire inherited suite as a routine check. Several legacy tests
+expect live hardware, can change outputs, or can hang while waiting for a
+device.
 
-## FPGA bitfile generation (only for developers)
-In case you would like to modify the logic running on the FPGA, you should make sure that you are able to [generate a working bitfile on your machine](http://pyrpl.readthedocs.io/en/latest/developer_guide/fpga_compilation.html). In short, to do so, you must install Vivado 2015.4 [(64-bit windows](windows web-installer](https://www.xilinx.com/member/forms/download/xef.html?filename=Xilinx_Vivado_SDK_2015.4_1118_2_Win64.exe&akdm=1) or [Linux)](https://www.xilinx.com/member/forms/download/xef.html?filename=Xilinx_Vivado_SDK_2015.4_1118_2_Lin64.bin&akdm=1) [together with a working license](http://pyrpl.readthedocs.io/en/latest/developer_guide/fpga_compilation.html#fpga-license). Next, with a terminal in the pyrpl root directory, type
+## Documentation and updates
+
+This README defines the supported installation and validation workflow.
+[`AGENTS.md`](AGENTS.md) records contributor constraints, and
+[`pyrpl/fpga/README.md`](pyrpl/fpga/README.md) records FPGA asset provenance.
+`Documentation.md` and the Sphinx tree contain useful upstream background but
+also historical installation and release instructions.
+
+The [upstream PyRPL documentation](https://pyrpl.readthedocs.io/) is useful as
+an API reference, but it does not define this fork's Python or packaging
+support. Report fork-specific problems in the
+[Sinclair PyRPL issue tracker](https://github.com/SinclairQuantumLab/pyrpl-wwlyn/issues).
+
+To update an existing checkout safely:
+
+```powershell
+git pull --ff-only
+uv lock --check
+uv sync --locked
 ```
-cd pyrpl/fpga
-make
-```
-Compilation should take between 10 and 30 minutes, depending on your machine. If there are no errors during compilation, the new bitfile (pyrpl/fpga/red_pitaya.bin) will be automatically used at the next restart of PyRPL. The best way to getting started is to skim through the very short Makefile in the fpga directory and to continue by reading the files mentioned in the makefile and the refences therein. All verilog source code is located in the subdirectory pyrpl/fpga/rtl/. 
 
 ## License
-Please read our license file [LICENSE](https://github.com/lneuhaus/pyrpl/blob/master/LICENSE) for more information. 
+
+This repository is licensed under the GNU General Public License v3.0 or
+later. See [`LICENSE`](LICENSE).
