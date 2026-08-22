@@ -114,18 +114,14 @@ class TestRedPitayaFpgaLoader(unittest.TestCase):
     def tearDownClass(cls):
         redpitaya_module.sleep = cls._original_sleep
 
-    def test_packaged_z10_assets_match_live_verified_pair(self):
+    def test_packaged_bitstream_preserves_fork_image(self):
         fpga_directory = Path(redpitaya_module.__file__).parent / 'fpga'
-        expected = {
-            'red_pitaya.bin':
-                '4894f44b7611f2f0cbc18d339596f28476e452de1bac01a30206864ccd92fffe',
-            'red_pitaya.dtbo':
-                '9c19b99bef128d6069d44e8294ce6f118ee8513e523673ec02e1510d76877020',
-        }
-        for filename, expected_hash in expected.items():
-            digest = hashlib.sha256(
-                (fpga_directory / filename).read_bytes()).hexdigest()
-            self.assertEqual(expected_hash, digest)
+        digest = hashlib.sha256(
+            (fpga_directory / 'red_pitaya.bin').read_bytes()).hexdigest()
+        self.assertEqual(
+            'dc6e71fb04d3a5a67731a5ddb99e7f80395a1c2fee2b8ae59168ce4252cee9ed',
+            digest)
+        self.assertFalse((fpga_directory / 'red_pitaya.dtbo').exists())
 
     def test_os_version_parsing(self):
         device = make_device('Red Pitaya OS 2.00-30\n')
@@ -155,8 +151,7 @@ class TestRedPitayaFpgaLoader(unittest.TestCase):
                          device.parameters['serverdirname'])
         self.assertEqual('fpga.dtbo',
                          device.parameters['serverdtbofilename'])
-        self.assertEqual('fpga/red_pitaya.dtbo',
-                         device.parameters['dtbo_filename'])
+        self.assertEqual('', device.parameters['dtbo_filename'])
         self.assertEqual('fpga.bit.bin',
                          device.c['redpitaya']['serverbinfilename'])
 
@@ -196,29 +191,24 @@ class TestRedPitayaFpgaLoader(unittest.TestCase):
                             for _source, destination in
                             device.ssh.scp.uploads))
 
-    def test_os2_uses_matching_bundled_dtbo_by_default(self):
-        device = make_device()
-        device.os_version = '2.07'
-        device._configure_os_compatibility()
+    def test_modern_os_requires_explicit_dtbo_before_mutation(self):
+        for os_version in ('2.07', '3.0.1'):
+            with self.subTest(os_version=os_version):
+                device = make_device()
+                device.os_version = os_version
+                device._configure_os_compatibility()
 
-        with tempfile.TemporaryDirectory() as directory:
-            bitstream = os.path.join(directory, 'custom.bin')
-            with open(bitstream, 'wb') as output:
-                output.write(b'bitstream')
-            device.update_fpga(filename=bitstream)
+                with tempfile.TemporaryDirectory() as directory:
+                    bitstream = os.path.join(directory, 'custom.bin')
+                    with open(bitstream, 'wb') as output:
+                        output.write(b'bitstream')
+                    with self.assertRaises(OSError) as raised:
+                        device.update_fpga(filename=bitstream)
 
-        overlay_commands = [command for command in device.ssh.commands
-                            if 'overlay.sh' in command]
-        self.assertTrue(overlay_commands[0].startswith(
-            '/opt/redpitaya/sbin/overlay.sh pyrpl '
-            '/opt/pyrpl/fpga.bit.bin'))
-        self.assertIn('PYRPL_OVERLAY_""OK', overlay_commands[0])
-        self.assertNotIn('PYRPL_OVERLAY_OK', overlay_commands[0])
-        self.assertIn('/opt/pyrpl/fpga.dtbo', overlay_commands[0])
-        self.assertEqual(2, len(device.ssh.scp.uploads))
-        self.assertTrue(any(source.endswith('red_pitaya.dtbo') and
-                            destination.endswith('/fpga.dtbo')
-                            for source, destination in device.ssh.scp.uploads))
+                self.assertIn('does not bundle a DTBO',
+                              str(raised.exception))
+                self.assertEqual([], device.ssh.commands)
+                self.assertEqual([], device.ssh.scp.uploads)
 
     def test_os2_requires_a_matching_local_dtbo(self):
         device = make_device()
@@ -244,10 +234,13 @@ class TestRedPitayaFpgaLoader(unittest.TestCase):
 
         with tempfile.TemporaryDirectory() as directory:
             bitstream = os.path.join(directory, 'custom.bin')
+            dtbo = os.path.join(directory, 'custom.dtbo')
             with open(bitstream, 'wb') as output:
                 output.write(b'bitstream')
+            with open(dtbo, 'wb') as output:
+                output.write(b'device tree overlay')
             with self.assertRaises(OSError) as raised:
-                device.update_fpga(filename=bitstream)
+                device.update_fpga(filename=bitstream, dtbo_filename=dtbo)
 
         self.assertIn('FPGA overlay loading failed', str(raised.exception))
 

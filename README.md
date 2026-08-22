@@ -48,11 +48,15 @@ python -m pyrpl your_configuration_name
 A GUI should open, let you configure the redpitaya device you would like to use, and you can start playing around with pyrpl. Different strings for 'your_configuration_name' create different configurations that will be automatically remembered by PyRPL, for example if you have several different redpitayas. Different RedPitayas with different configuration names can be run simultaneously in separate terminals.
 
 Red Pitaya OS 2 and 3 are detected automatically. With `reloadfpga=True`,
-PyRPL loads the bundled, matching bitstream and device-tree overlay through
-the OS overlay manager; older OS images use `/dev/xdevcfg` only when it is a
-real character device. To use a board-specific build, pass both `filename`
-and `dtbo_filename` to `Pyrpl`. The bundled image targets the Z10-based
-STEMlab 125-14; Z20 boards require their own matching pair.
+PyRPL uses the configured bitstream and the OS overlay manager. This fork
+preserves its custom `pyrpl/fpga/red_pitaya.bin` but intentionally does not
+bundle a device-tree overlay. On OS 2 or 3, pass an explicitly verified,
+matching `dtbo_filename` for that FPGA build and board; loading fails before
+upload if it is absent. Clear or replace any saved
+`fpga/red_pitaya.dtbo` setting left by the superseded upstream-artifact
+experiment. Older OS images use `/dev/xdevcfg` only when it is a real
+character device. Never substitute an official upstream bitstream for the
+fork image merely to make a connection succeed.
 
 ## Issues
 We collect a list of common problems on the [documenation website](http://pyrpl.readthedocs.io/en/latest/user_guide/installation/common_problems.html). If you do not find your problem listed there, please report all problems or wishes as new issues on [this page](https://github.com/lneuhaus/pyrpl/issues), so we can fix it and improve the future user experience.

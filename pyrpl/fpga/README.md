@@ -1,22 +1,34 @@
 # Directory structure
 
-## Packaged Z10 image
+## Fork-specific packaged image
 
-`red_pitaya.bin` and `red_pitaya.dtbo` are the current upstream PyRPL Z10
-assets fetched from `pyrpl-fpga/pyrpl` on 2026-08-20. They were live-tested
-on a `z10_125` board running Red Pitaya OS 2.07.
+`red_pitaya.bin` is the fork-specific FPGA image introduced by commit
+`61295d9` (`Compile a new bitstream.`). That commit compiled the fork lineage
+containing its PID and digital-setpoint FPGA behavior. Preserve this artifact
+byte-for-byte unless the user explicitly authorizes a replacement.
 
-- `red_pitaya.bin` SHA-256: `4894F44B7611F2F0CBC18D339596F28476E452DE1BAC01A30206864CCD92FFFE`
-- `red_pitaya.dtbo` SHA-256: `9C19B99BEF128D6069D44E8294CE6F118EE8513E523673EC02E1510D76877020`
+- Size: `2,083,740` bytes
+- Git blob: `b306438ea69753197570da0b5a403b1b380301ed`
+- SHA-256: `DC6E71FB04D3A5A67731A5DDB99E7F80395A1C2FEE2B8AE59168CE4252CEE9ED`
+- MD5: `445D5FBAE304D4CCC7BB5AF30E849967`
 
-The fork-specific RTL sources in this directory are not guaranteed to
-reproduce these binaries. Treat a rebuilt image as a new hardware artifact
-and validate that it loads without resetting the board before replacing the
-packaged image.
+No matching DTBO is bundled or present in the fork's reachable history. The
+upstream PyRPL bitstream/DTBO pair added during the Python 3.9 work was an
+unauthorized substitution and was removed by a forward corrective commit.
+Do not reintroduce those assets or describe an upstream connection test as
+validation of this fork.
 
-Do not restore the former packaged bitstream with MD5
-`445D5FBAE304D4CCC7BB5AF30E849967`: it reset the verified OS 2.07 Z10 board
-with both the board-profile and upstream PyRPL DTBOs.
+Red Pitaya OS 2/3 programming requires an explicitly supplied
+`dtbo_filename` whose provenance and compatibility with this bitstream and
+board have been verified separately. The loader refuses to upload anything
+when that setting is absent. The fork image reset the tested OS 2.07 board
+when paired experimentally with both the board-profile and upstream PyRPL
+overlays; do not repeat that live experiment without explicit authorization
+and a reviewed recovery plan.
+
+The available build reports do not fully reproduce the final binary from
+`61295d9`. Treat any rebuild as a new hardware artifact requiring provenance,
+hash updates, review, and separately authorized live validation.
 
 |  path           | contents
 |-----------------|-------------------------------------------------------------

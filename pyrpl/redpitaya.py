@@ -58,7 +58,7 @@ defaultparameters = dict(
     filename='fpga/red_pitaya.bin',  # local FPGA bitstream
     recompileserver=False,  # recompile the server source on the redpitaya when the server is re-installed?
     serverbinfilename='fpga.bin',  # name of the binfile on the server
-    dtbo_filename='fpga/red_pitaya.dtbo',  # matching device-tree overlay
+    dtbo_filename='',  # OS 2/3 require an explicitly supplied matching overlay
     serverdtbofilename='fpga.dtbo',  # overlay filename on the server
     serverdirname = "//opt//pyrpl//",  # server directory for server app and bitfile
     leds_off=True,  # turn off all GPIO lets at startup (improves analog performance)
@@ -99,7 +99,7 @@ class RedPitaya(object):
             reloadserver=False,  # reinstall the server at startup if not necessary?
             reloadfpga=True,  # reload the fpga bitfile at startup?
             filename='fpga/red_pitaya.bin',  # name of the bitfile for the fpga
-            dtbo_filename='fpga/red_pitaya.dtbo',  # device-tree overlay
+            dtbo_filename='',  # explicit matching overlay required on OS 2/3
             serverbinfilename='fpga.bin',  # name of the binfile on the server
             serverdtbofilename='fpga.dtbo',  # overlay filename on the server
             serverdirname = "//opt//pyrpl//",  # server directory for server app and bitfile
@@ -319,8 +319,6 @@ class RedPitaya(object):
             'serverbinfilename': required_binfilename,
             'serverdtbofilename': 'fpga.dtbo',
         }
-        if not self.parameters.get('dtbo_filename'):
-            required_settings['dtbo_filename'] = 'fpga/red_pitaya.dtbo'
         changed = {key: (self.parameters.get(key), value)
                    for key, value in required_settings.items()
                    if self.parameters.get(key) != value}
@@ -396,10 +394,17 @@ class RedPitaya(object):
             'FPGA bitstream')
         modern_os = (self.os_version.startswith('2.') or
                      self.os_version.startswith('3.'))
-        dtbo_source = self._local_fpga_file(
+        configured_dtbo = (
             dtbo_filename if dtbo_filename is not None else
-            self.parameters['dtbo_filename'],
-            'FPGA device-tree overlay', required=modern_os)
+            self.parameters['dtbo_filename'])
+        if modern_os and not configured_dtbo:
+            raise OSError(
+                'Red Pitaya OS %s requires an explicitly configured '
+                'matching FPGA device-tree overlay. This fork does not '
+                'bundle a DTBO; pass dtbo_filename for the configured '
+                'bitstream and board.' % self.os_version)
+        dtbo_source = self._local_fpga_file(
+            configured_dtbo, 'FPGA device-tree overlay', required=modern_os)
         bin_file_path = self._server_file(
             self.parameters['serverbinfilename'])
         dtbo_file_path = self._server_file(
