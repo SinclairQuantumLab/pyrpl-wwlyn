@@ -24,6 +24,7 @@ from .errors import ExpectedPyrplError
 
 import logging
 import numpy as np
+from six import with_metaclass
 from collections import OrderedDict
 from qtpy import QtCore
 
@@ -62,15 +63,15 @@ class SignalLauncher(QtCore.QObject):
         #self.update_attribute_by_name.connect(widget.update_attribute_by_name)
         for key in dir(self.__class__):
             val = getattr(self, key)
-            if isinstance(val, QtCore.SignalInstance) and hasattr(widget,
-                                                                  key):
+            if isinstance(val, QtCore.pyqtBoundSignal) and hasattr(widget,
+                                                                   key):
                 val.connect(getattr(widget, key))
 
     def _clear(self):
         """ Destroys the object by disconnecting all signals and by killing all timers"""
         for key in dir(self.__class__):
             val = getattr(self, key)
-            if isinstance(val, QtCore.SignalInstance):
+            if isinstance(val, QtCore.pyqtBoundSignal):
                 try:
                     val.disconnect()
                 except TypeError:  # occurs if signal is not connected to anything
@@ -237,9 +238,14 @@ class DoSetup(object):
                                         exc_type, exc_val, exc_tb)
 
 
-class Module(object, metaclass=ModuleMetaClass):
-    # ModuleMetaClass ensures that attributes have their internal name set
-    # automatically upon module creation.
+class Module(with_metaclass(ModuleMetaClass, object)):
+    # The Syntax for defining a metaclass changed from Python 2 to 3.
+    # with_metaclass is compatible with both versions and roughly does this:
+    # def with_metaclass(meta, *bases):
+    #     """Create a base class with a metaclass."""
+    #     return meta("NewBase", bases, {})
+    # Specifically, ModuleMetaClass ensures that attributes have automatically
+    # their internal name set properly upon module creation.
     """
     A module is a component of pyrpl doing a specific task.
 

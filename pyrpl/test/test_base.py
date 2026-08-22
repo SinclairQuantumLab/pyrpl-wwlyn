@@ -8,8 +8,8 @@ from ..pyrpl_utils import time
 from ..async_utils import sleep as async_sleep
 
 # I don't know why, in nosetests, the logger goes to UNSET...
-logger_qasync = logging.getLogger(name='qasync')
-logger_qasync.setLevel(logging.INFO)
+logger_quamash = logging.getLogger(name='quamash')
+logger_quamash.setLevel(logging.INFO)
 
 
 class TestPyrpl(object):

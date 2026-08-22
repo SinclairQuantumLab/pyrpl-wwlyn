@@ -32,7 +32,7 @@ class TestPyqtgraph(TestRedpitaya):
         if self.REDPITAYA:
             self.r.scope.setup(trigger_source='immediately', duration=self.duration)
         self.timer = QtCore.QTimer()
-        self.timer.setInterval(max(0, int(round(1000 * self.dt))))
+        self.timer.setInterval(1000*self.dt)
         self.timer.timeout.connect(self.update_plot)
         self.timer.start()
 

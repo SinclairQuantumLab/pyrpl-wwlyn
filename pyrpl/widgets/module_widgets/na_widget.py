@@ -297,8 +297,7 @@ class NaWidget(AcquisitionModuleWidget):
 
 class MyGraphicsWindow(pg.GraphicsLayoutWidget):
     def __init__(self, title, parent_widget):
-        super(MyGraphicsWindow, self).__init__(parent=parent_widget,
-                                               title=title)
+        super(MyGraphicsWindow, self).__init__(title)
         self.parent_widget = parent_widget
         self.setToolTip("IIR transfer function: \n"
                         "----------------------\n"
@@ -327,4 +326,5 @@ class MyGraphicsWindow(pg.GraphicsLayoutWidget):
                 self.parent_widget.attribute_widgets['zeros'].set_selected(-1)
         except BaseException as e:
             self.parent_widget.module._logger.error(e)
-        return super(MyGraphicsWindow, self).mousePressEvent(*args, **kwds)
+        finally:
+            return super(MyGraphicsWindow, self).mousePressEvent(*args, **kwds)

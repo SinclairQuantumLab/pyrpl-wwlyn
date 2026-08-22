@@ -428,7 +428,7 @@ class Pid(FilterModule):
 
         Returns
         -------
-        tf: np.array(..., dtype=complex)
+        tf: np.array(..., dtype=np.complex)
             The complex open loop transfer function of the module.
         """
         return Pid._transfer_function(frequencies,
@@ -475,7 +475,7 @@ class Pid(FilterModule):
         found in pid._frequency_corection
         """
 
-        frequencies = np.array(frequencies, dtype=complex)
+        frequencies = np.array(frequencies, dtype=np.complex)
         # integrator with one cycle of extra delay
         tf = i / (frequencies * 1j) \
             * np.exp(-1j * 8e-9 * frequency_correction *
@@ -502,8 +502,8 @@ class Pid(FilterModule):
         Transfer function of the eventual extradelay of a pid module
         """
         delay = module_delay_cycle * 8e-9 / frequency_correction + extradelay_s
-        frequencies = np.array(frequencies, dtype=complex)
-        tf = np.ones(len(frequencies), dtype=complex)
+        frequencies = np.array(frequencies, dtype=np.complex)
+        tf = np.ones(len(frequencies), dtype=np.complex)
         tf *= np.exp(-1j * delay * frequencies * 2 * np.pi)
         return tf
 
@@ -514,7 +514,7 @@ class Pid(FilterModule):
         """
         Transfer function of the inputfilter part of a pid module
         """
-        frequencies = np.array(frequencies, dtype=complex)
+        frequencies = np.array(frequencies, dtype=np.complex)
         module_delay = 0
         tf = np.ones(len(frequencies), dtype=complex)
         # input filter modelisation

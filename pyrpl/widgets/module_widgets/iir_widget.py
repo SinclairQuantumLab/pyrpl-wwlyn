@@ -11,7 +11,7 @@ from ... import APP
 
 class MyGraphicsWindow(pg.GraphicsLayoutWidget):
     def __init__(self, title, parent):
-        super(MyGraphicsWindow, self).__init__(parent=parent, title=title)
+        super(MyGraphicsWindow, self).__init__(title)
         self.parent = parent
         self.setToolTip("-----plot legend---------------\n"
                         "yellow: theoretical IIR transfer function\n"
@@ -288,11 +288,11 @@ class IirWidget(ModuleWidget):
             return np.asarray(f, dtype=float)
 
     def _magnitude(self, data):
-        return 20. * np.log10(np.abs(np.asarray(data, dtype=complex))
+        return 20. * np.log10(np.abs(np.asarray(data, dtype=np.complex))
                               + sys.float_info.epsilon)
 
     def _phase(self, data):
-        return np.angle(np.asarray(data, dtype=complex), deg=True)
+        return np.angle(np.asarray(data, dtype=np.complex), deg=True)
 
     def update_plot(self):
         # first, we compile the line plot data, then we iterate over them and

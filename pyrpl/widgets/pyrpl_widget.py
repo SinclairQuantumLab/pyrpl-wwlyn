@@ -117,7 +117,7 @@ class MyDockWidget(QtWidgets.QDockWidget):
                 self.timer = QtCore.QTimer()
                 self.timer.timeout.connect(fn)
                 self.timer.setSingleShot(True)
-                self.timer.setInterval(1)
+                self.timer.setInterval(1.0)
                 self.timer.start()
             event.accept()
             return True
@@ -216,18 +216,6 @@ class PyrplWidget(QtWidgets.QMainWindow):
     def _clear(self):
         for timer in self.timers:
             timer.stop()
-        try:
-            EL.show_exception.disconnect(self.show_exception)
-        except (TypeError, RuntimeError):
-            pass
-        if self.handler is not None:
-            self.logger.removeHandler(self.handler)
-            try:
-                self.handler.show_log.disconnect(self.show_log)
-            except (TypeError, RuntimeError):
-                pass
-            self.handler.close()
-            self.handler = None
 
     def add_dock_widget(self, create_widget, name):
         dock_widget = MyDockWidget(create_widget,

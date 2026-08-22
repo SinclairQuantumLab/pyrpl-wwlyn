@@ -4,42 +4,23 @@ This file contains a number of methods for asynchronous operations.
 import logging
 from qtpy import QtCore, QtWidgets
 from timeit import default_timer
+import sys
 logger = logging.getLogger(name=__name__)
 
 from . import APP  # APP is only created once at the startup of PyRPL
 MAIN_THREAD = APP.thread()
 
-from asyncio import Future, ensure_future, CancelledError, current_task, \
-    get_running_loop, set_event_loop, TimeoutError
-import qasync
-
 try:
-    # Modern IPython/ipykernel already owns a running asyncio loop. Replacing
-    # it with a second qasync loop can stall the kernel after this import.
-    LOOP = get_running_loop()
-    _PYRPL_OWNS_LOOP = False
-except RuntimeError:
-    try:
-        from IPython import get_ipython
-        _IPYTHON = get_ipython()
-    except ImportError:  # pragma: no cover - IPython is a runtime dependency
-        _IPYTHON = None
-
-    # Terminal IPython drives Qt through its GUI input hook but does not expose
-    # a running asyncio loop while a command is evaluated.
-    if _IPYTHON is not None:
-        LOOP = qasync.QEventLoop(APP, already_running=True)
-        _PYRPL_OWNS_LOOP = False
-    else:
-        LOOP = qasync.QEventLoop(APP)
-        _PYRPL_OWNS_LOOP = True
-    set_event_loop(LOOP)
-
-
-def _inside_owned_asyncio_task():
-    """Whether blocking would re-enter a Task driven by PyRPL's Qt loop."""
-    return (_PYRPL_OWNS_LOOP and LOOP.is_running()
-            and current_task(loop=LOOP) is not None)
+    from asyncio import Future, ensure_future, CancelledError, \
+        set_event_loop, TimeoutError
+except ImportError:  # this occurs in python 2.7
+    logger.debug("asyncio not found, we will use concurrent.futures "
+                  "instead of python 3.5 Futures.")
+    from concurrent.futures import Future, CancelledError, TimeoutError
+else:
+    import quamash
+    set_event_loop(quamash.QEventLoop())
+    LOOP = quamash.QEventLoop()
 
 
 class MainThreadTimer(QtCore.QTimer):
@@ -113,7 +94,7 @@ class MainThreadTimer(QtCore.QTimer):
         super(MainThreadTimer, self).__init__()
         self.moveToThread(MAIN_THREAD)
         self.setSingleShot(True)
-        self.setInterval(max(0, int(round(interval))))
+        self.setInterval(interval)
 
 
 
@@ -139,7 +120,11 @@ class PyrplFuture(Future):
     """
 
     def __init__(self):
-        super(PyrplFuture, self).__init__(loop=LOOP)
+        if sys.version.startswith('3.7') or sys.version.startswith('3.6'):
+            super(PyrplFuture, self).__init__(loop=LOOP) # Necessary
+            # otherwise The Future will never be executed...
+        else: # python 2.7, 3.5,3.6
+            super(PyrplFuture, self).__init__()
         self._timer_timeout = None  # timer that will be instantiated if
         #  result(timeout) is called with a >0 value
 
@@ -150,51 +135,51 @@ class PyrplFuture(Future):
         Returns:
             The result of the future.
         """
-        return super(PyrplFuture, self).result()
+        try: #  concurrent.futures.Future (python 2)
+            return super(PyrplFuture, self).result(timeout=0)
+        except TypeError: #  asyncio.Future (python 3)
+            return super(PyrplFuture, self).result()
 
-    def _set_timeout(self):
+    def _exit_loop(self, x=None):
+        """
+        Parameter x=None is there such that the function can be set as
+        a callback at the same time for timer_timeout.timeout (no
+        argument) and for self.done (1 argument).
+        """
         if not self.done():
-            self.set_exception(TimeoutError("timeout occurred"))
+            self.set_exception(TimeoutError("timeout occured"))
+        if hasattr(self, 'loop'): # Python <=3.6
+            self.loop.quit()
 
     def _wait_for_done(self, timeout):
         """
         Will not return until either timeout expires or future becomes "done".
-        Coroutine callers must await the future instead of blocking on
-        await_result().
+        There is one potential deadlock situation here:
+
+        The deadlock occurs if we await_result while at the same
+        time, this future needs to await_result from another future
+        ---> To be safe, don't use await_result() in a Qt slot...
         """
         if self.cancelled():
             raise CancelledError("Future was cancelled")  # pragma: no-cover
         if not self.done():
-            self._timer_timeout = None
+            self.timer_timeout = None
             if (timeout is not None) and timeout > 0:
                 self._timer_timeout = MainThreadTimer(timeout*1000)
-                self._timer_timeout.timeout.connect(self._set_timeout)
+                self._timer_timeout.timeout.connect(self._exit_loop)
                 self._timer_timeout.start()
-            try:
-                if _PYRPL_OWNS_LOOP and not LOOP.is_running():
-                    LOOP.run_until_complete(self)
+            self.add_done_callback(self._exit_loop)
+            #if hasattr(self, 'get_loop'): # This works unless
+            # _wait_for_done is called behind a qt slot... -->NOT GOOD!!!
+            #
+            #    self.get_loop().run_until_complete(self)
+            #else: # Python <= 3.6
+            self.loop = QtCore.QEventLoop()
+            self.loop.exec_()
+            if self._timer_timeout is not None:
+                if not self._timer_timeout.isActive():
+                    return TimeoutError("Timeout occured")  # pragma: no-cover
                 else:
-                    if _inside_owned_asyncio_task():
-                        raise RuntimeError(
-                            "await_result() cannot block inside an asyncio "
-                            "Task; use 'await future' instead")
-
-                    # A host loop such as ipykernel cannot run re-entrantly.
-                    # Keep Qt responsive and poll the Future's synchronous
-                    # done state until its Qt-backed acquisition completes.
-                    wait_loop = QtCore.QEventLoop()
-                    poll_timer = QtCore.QTimer()
-                    poll_timer.setInterval(1)
-                    poll_timer.timeout.connect(
-                        lambda: wait_loop.quit() if self.done() else None)
-                    poll_timer.start()
-                    try:
-                        wait_loop.exec_()
-                    finally:
-                        poll_timer.stop()
-            finally:
-                if (self._timer_timeout is not None
-                        and self._timer_timeout.isActive()):
                     self._timer_timeout.stop()
 
     def await_result(self, timeout=None):
@@ -202,9 +187,12 @@ class PyrplFuture(Future):
         Return the result of the call that the future represents.
         Will not return until either timeout expires or future becomes "done".
 
-        Coroutine callers should use ``await future``. Blocking an active
-        asyncio Task would re-enter that Task on Python 3.14 and is rejected
-        with an actionable error.
+        There is one potential deadlock situation here:
+        The deadlock occurs if we await_result while at the same
+        time, this future needs to await_result from another future since
+        the eventloop will be blocked.
+        ---> To be safe, don't use await_result() in a Qt slot. You should
+        rather use result() and add_done_callback() instead.
 
         Args:
             timeout: The number of seconds to wait for the result if the future
@@ -258,45 +246,12 @@ def sleep(delay):
     Sleeps for :code:`delay` seconds + runs the event loop in the background.
 
         * This function will never return until the specified delay in seconds is elapsed.
-        * During execution, the Qt event loop remains responsive. In a plain
-          synchronous process, native asyncio tasks also continue to progress.
+        * During the execution of this function, the qt event loop (== asyncio event-loop in pyrpl) continues to process events from the gui, or from other coroutines.
         * Contrary to time.sleep() or async.sleep(), this function will try to achieve a precision much better than 1 millisecond (of course, occasionally, the real delay can be longer than requested), but on average, the precision is in the microsecond range.
         * Finally, care has been taken to use low level system-functions to reduce CPU-load when no events need to be processed.
 
     More details on the implementation can be found on the page: `<https://github.com/lneuhaus/pyrpl/wiki/Benchmark-asynchronous-sleep-functions>`_.
-
-    In a coroutine or modern notebook cell, use ``await asyncio.sleep(...)``
-    when sibling asyncio tasks must progress. A synchronous function cannot
-    re-enter its already-running host Task using public asyncio APIs.
     """
-    if LOOP.is_running():
-        if _inside_owned_asyncio_task():
-            raise RuntimeError(
-                "sleep() cannot block inside an asyncio Task; use "
-                "'await asyncio.sleep(...)' instead")
-        return _sleep_with_qt(delay)
-
-    if not _PYRPL_OWNS_LOOP:
-        return _sleep_with_qt(delay)
-
-    # In scripts and notebooks without an outer qasync runner, use a Qt timer
-    # as the completion signal for the shared loop.  No asyncio Task may stay
-    # on the stack while the loop runs, because Python 3.14 rejects re-entering
-    # one Task while another Task is executing.
-    end_time = default_timer() + delay
-    waiter = LOOP.create_future()
-    timer = MainThreadTimer(max(0, (delay - 1e-3) * 1000))
-    timer.timeout.connect(lambda: waiter.set_result(None))
-    timer.start()
-    LOOP.run_until_complete(waiter)
-
-    # Preserve the original sub-millisecond finish without keeping the CPU
-    # busy for the longer portion of the delay.
-    while default_timer() < end_time:
-        pass
-
-
-def _sleep_with_qt(delay):
     tic = default_timer()
     end_time = tic + delay
 

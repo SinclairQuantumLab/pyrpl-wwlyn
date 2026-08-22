@@ -1,4 +1,5 @@
 from __future__ import division
+import scipy
 import numpy as np
 import logging
 from ...attributes import SelectProperty, FloatProperty, FrequencyProperty, \
@@ -341,11 +342,11 @@ class InputSignal(Signal):
         of the variable. May be overwritten by a more efficient (analytical) method
         in a derived class.
         """
-        dx = 1e-6
-        return (self.expected_signal(variable - 2 * dx)
-                - 8 * self.expected_signal(variable - dx)
-                + 8 * self.expected_signal(variable + dx)
-                - self.expected_signal(variable + 2 * dx)) / (12 * dx)
+        return scipy.misc.derivative(self.expected_signal,
+                                     variable,
+                                     dx=1e-6,
+                                     n=1,  # first derivative
+                                     order=5)
 
     def is_locked(self, loglevel=logging.INFO):
         """ returns whether the input is locked at the current stage """

@@ -19,10 +19,10 @@ function). Let's see that on an example:
     %pylab qt # in a notebook, we need the qt event loop to run in the background
     import asyncio
     import scipy.fftpack
-    import qasync
-    from qtpy import QtCore, QtWidgets
-    APP = QtWidgets.QApplication.instance() or QtWidgets.QApplication([])
-    loop = qasync.QEventLoop(APP)
+    import quamash # quamash allows to use the asyncio syntax of python 3 with the Qt event loop. Not sure how mainstream the library is...
+    from PyQt4 import QtCore, QtGui
+    import asyncio
+    loop = quamash.QEventLoop()
     asyncio.set_event_loop(loop) # set the qt event loop as the loop to be used by asyncio
 
 
@@ -58,11 +58,12 @@ practice, the code execution is probably extremely similar)
     %pylab qt
     import asyncio
     import scipy.fftpack
-    import qasync
-    from qtpy import QtCore, QtWidgets
-    APP = QtWidgets.QApplication.instance() or QtWidgets.QApplication([])
+    import quamash
+    from PyQt4 import QtCore, QtGui
+    APP = QtGui.QApplication.instance()
+    import asyncio
     from promise import Promise
-    loop = qasync.QEventLoop(APP)
+    loop = quamash.QEventLoop()
     asyncio.set_event_loop(loop)
 
 
@@ -186,10 +187,10 @@ would easily do the trick:
     %pylab qt
     import asyncio
     import scipy.fftpack
-    import qasync
-    from qtpy import QtCore, QtWidgets
-    APP = QtWidgets.QApplication.instance() or QtWidgets.QApplication([])
-    loop = qasync.QEventLoop(APP)
+    import quamash
+    from PyQt4 import QtCore, QtGui
+    import asyncio
+    loop = quamash.QEventLoop()
     asyncio.set_event_loop(loop)
 
 

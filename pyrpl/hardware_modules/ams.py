@@ -53,7 +53,7 @@ class AMS(HardwareModule):
         """
         Returns an array of all four XADC voltages.
         """
-        x = np.array(self._reads(0x0, 4), dtype=float)
+        x = np.array(self._reads(0x0, 4), dtype=np.float)
         x[x >= 2 ** 11] -= 2 ** 12
         return x * (1.0 / self._xadc_norm)
 

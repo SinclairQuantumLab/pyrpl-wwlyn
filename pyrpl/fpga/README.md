@@ -1,23 +1,5 @@
 # Directory structure
 
-## Packaged Z10 image
-
-`red_pitaya.bin` and `red_pitaya.dtbo` are the current upstream PyRPL Z10
-assets fetched from `pyrpl-fpga/pyrpl` on 2026-08-20. They were live-tested
-on a `z10_125` board running Red Pitaya OS 2.07.
-
-- `red_pitaya.bin` SHA-256: `4894F44B7611F2F0CBC18D339596F28476E452DE1BAC01A30206864CCD92FFFE`
-- `red_pitaya.dtbo` SHA-256: `9C19B99BEF128D6069D44E8294CE6F118EE8513E523673EC02E1510D76877020`
-
-The fork-specific RTL sources in this directory are not guaranteed to
-reproduce these binaries. Treat a rebuilt image as a new hardware artifact
-and validate that it loads without resetting the board before replacing the
-packaged image.
-
-Do not restore the former packaged bitstream with MD5
-`445D5FBAE304D4CCC7BB5AF30E849967`: it reset the verified OS 2.07 Z10 board
-with both the board-profile and upstream PyRPL DTBOs.
-
 |  path           | contents
 |-----------------|-------------------------------------------------------------
 | `fpga/Makefile` | main Makefile, used to run FPGA related tools

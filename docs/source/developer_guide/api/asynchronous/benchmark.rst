@@ -183,8 +183,8 @@ Async programming in python3(.5):
 
 A description of async programming in python 3.5 is given in
 ":doc:`index`". To summarize, it is possible to use the Qt event loop as
-a backend for the coroutine syntax in Python 3 using QAsync. Because QAsync
-is a wrapper
+a backend for the beautiful syntax of coroutines in python 3 using
+quamash. Of course, because the quamash library is just a wrapper
 translating the new python asynchronous syntax into QTimers, there is no
 magic on the precision/efficiency side: for instance, the basic
 coroutine ``asyncio.sleep`` gives a result similar to "Running a local
