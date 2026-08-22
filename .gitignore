@@ -13,6 +13,7 @@ curves/
 # Distribution / packaging
 .Python
 env/
+.venv/
 build/
 develop-eggs/
 dist/
@@ -133,4 +134,5 @@ scripts/pyrpl.spec
 cover/index.html
 unit_tests.xml
 unit_test_results.xml
+unit_test_coverage.xml
 

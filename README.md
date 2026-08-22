@@ -19,6 +19,35 @@ PyRPL (Python RedPitaya Lockbox) turns your RedPitaya into a powerful DSP device
 The official PyRPL website address is [http://pyrpl.readthedocs.io/](http://pyrpl.readthedocs.io). The information on the website is more up-to-date than in this readme.
 
 ## Installation
+
+This fork targets CPython 3.9. From the repository root on Windows:
+
+```powershell
+python --version  # Verify that this reports Python 3.9.x.
+python -m venv .venv
+.\.venv\Scripts\python -m pip install --upgrade pip
+.\.venv\Scripts\python -m pip install -r requirements.txt
+```
+
+If this environment will be selected as a Jupyter kernel, also install
+`ipykernel` into it. The Conda environment below includes it already.
+
+Alternatively, create the supplied Conda environment:
+
+```powershell
+conda env create -f pyrpl.yml
+conda activate pyrpl-py39
+```
+
+Both methods install this checkout, including its fork-specific FPGA image.
+The declared dependency bounds avoid manual NumPy monkeypatches. Do not
+install the unrelated `pyrpl` package from PyPI over this checkout.
+
+### Historical upstream installation
+
+The instructions below predate this fork's Python 3.9 environment and are
+retained as historical PyRPL documentation.
+
 The easiest and fastest way to get PyRPL is to download and execute the [precompiled executable for windows](https://sourceforge.net/projects/pyrpl/files/latest/download). This option requires no extra programs to be installed on the computer.
 
 If instead you would like to use and/or modify the source code, make sure you have an
@@ -68,6 +97,10 @@ The full html documentation is hosted at [http://pyrpl.readthedocs.io](http://py
 
 ## Updates
 Since PyRPL is continuously improved, you should install upgrades if you expect bugfixes. If you installed PyRPL by using pip, just type
+
+**Historical note:** the command below installs the official PyPI package, not
+this fork. Do not run it for this checkout; update this checkout with Git.
+
 ```
 pip install --upgrade pyrpl
 ```

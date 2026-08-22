@@ -29,6 +29,9 @@ from collections import OrderedDict
 from qtpy import QtCore
 
 
+QT_SIGNAL_INSTANCE = QtCore.SignalInstance
+
+
 class SignalLauncher(QtCore.QObject):
     """
     Object that is used to handle signal the emission for a :obj:`Module`.
@@ -63,15 +66,14 @@ class SignalLauncher(QtCore.QObject):
         #self.update_attribute_by_name.connect(widget.update_attribute_by_name)
         for key in dir(self.__class__):
             val = getattr(self, key)
-            if isinstance(val, QtCore.pyqtBoundSignal) and hasattr(widget,
-                                                                   key):
+            if isinstance(val, QT_SIGNAL_INSTANCE) and hasattr(widget, key):
                 val.connect(getattr(widget, key))
 
     def _clear(self):
         """ Destroys the object by disconnecting all signals and by killing all timers"""
         for key in dir(self.__class__):
             val = getattr(self, key)
-            if isinstance(val, QtCore.pyqtBoundSignal):
+            if isinstance(val, QT_SIGNAL_INSTANCE):
                 try:
                     val.disconnect()
                 except TypeError:  # occurs if signal is not connected to anything

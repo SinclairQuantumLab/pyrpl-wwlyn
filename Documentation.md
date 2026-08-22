@@ -21,7 +21,7 @@
     - [External Trigger Configuration](#external-trigger-configuration)
     - [Labscript](#labscript)
       - [Blacs](#blacs)
-      - [Fix the package conflict without downgrading in **python 3.9**](#fix-the-package-conflict-without-downgrading-in-python-39)
+      - [Dependency compatibility in **Python 3.9**](#dependency-compatibility-in-python-39)
       - [Run 2 blacs at the same time](#run-2-blacs-at-the-same-time)
   - [Useful Sources \& Thanks](#useful-sources--thanks)
 
@@ -74,8 +74,8 @@ pip install .  # Use virtual environment recommended
 pip install pyqt5
 # Fix any import errors according to error messages when importing PyRPL
 ```
-**Note:** We can resolve package conflicts by downgrading numpy, pyqtgraph etc. as needed. Use virtual environment recommended. Or we have a way to 
-[fix the package conflict without downgrading.](#fix-the-package-conflict-without-downgrading-in-python-39)
+**Note:** We can resolve package conflicts by downgrading numpy, pyqtgraph etc. as needed. Use virtual environment recommended. The fork now has a
+[declared Python 3.9-compatible environment.](#dependency-compatibility-in-python-39)
 
 #### Install my modified PyRPL
 
@@ -92,8 +92,8 @@ cd the_folder_name # Where setup.py exists
 pip install .  # Use virtual environment recommended
 # Fix any import errors according to error messages when importing PyRPL
 ```
-I have already fixed the pyqtgraph conflict in my code, and we need to manually add some lines before importing pyrpl to fix numpy compatibility in 
-[Fix the package conflict without downgrading.](#fix-the-package-conflict-without-downgrading-in-python-39)
+The repository now declares Python 3.9-compatible dependency bounds, so no
+NumPy compatibility monkeypatch is needed before importing PyRPL.
 
 #### (Resolved) Calibration issue
 
@@ -411,11 +411,24 @@ PyRPL installation causes package conflicts. Two approaches:
 
 | Method | Pros | Cons | Recommended For |
 |--------|------|------|-----------------|
-| [**Fix conflicts directly**](#fix-the-package-conflict-without-downgrading-in-python-39) | Keep new-version packages, preserves base environment, use RunManager | Requires manual fixes in package source code | Want to use all the devices in one env & directly use RP to run sequence not only external trigger |
+| [**Use the declared Python 3.9 environment**](#dependency-compatibility-in-python-39) | Compatible dependency bounds, preserves PyRPL behavior | Requires an isolated environment | Direct PyRPL and RunManager use |
 | **Run dual Blacs** | Use old-version packages in virtual env, reserves base environment | Cannot directly use RP to run sequence | Complex conflicts in packages that cannot be manually fixed |
 
 
-#### Fix the package conflict without downgrading in **python 3.9**
+#### Dependency compatibility in **Python 3.9**
+
+Install this checkout with `pip install -r requirements.txt` or create the
+environment from `pyrpl.yml`. The package metadata selects versions compatible
+with the legacy NumPy and SciPy APIs used by this fork. Do not add aliases to
+the NumPy module at runtime; that can conceal an incompatible environment.
+
+The PyQtGraph and QtPy compatibility adjustments are included in this source
+tree and work with the declared dependency ranges.
+
+##### Historical manual workaround
+
+The following text is the author's original workaround. It is retained for
+provenance, but it is not required when using the declared environment above.
 
 This fix is done in python 3.9, and it may not suit other python version (python 3.11 can't, I haven't try some other.)
 

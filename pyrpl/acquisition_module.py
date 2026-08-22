@@ -413,7 +413,7 @@ class AcquisitionModule(Module):
         - The curve can be retrieved by calling result(timeout) on the future object.
         - The future is cancelled if the instrument's state is changed before the end of the acquisition, or another call to curve_async() or curve() is made on the same instrument.
         """
-        if self.running_state is not "stopped":
+        if self.running_state != "stopped":
             self.stop()
         return self._curve_async(0)
 

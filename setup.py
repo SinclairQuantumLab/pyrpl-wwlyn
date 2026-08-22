@@ -9,7 +9,6 @@
 from __future__ import print_function
 from setuptools import setup, find_packages
 from setuptools.command.test import test as TestCommand
-from distutils.core import setup
 import io
 import codecs
 import os
@@ -38,20 +37,20 @@ version = _locals['__version__']
 #             requirements.append(line.strip())
 requirements = ['scp',
                 'matplotlib', # optional requirementm, not needed for core
-                'scipy>=1.2',
+                'scipy>=1.9,<1.12',
                 'pyyaml',
                 #'ruamel.yaml' # temporarily disabled
                 'pandas',
-                'pyqtgraph',
-                'numpy>=1.9',
-                'paramiko>=2.0',
+                'pyqtgraph>=0.11',
+                'numpy>=1.23,<1.24',
+                'paramiko>=2.0,<4',
                 'nose>=1.0',
-                'pyqt5',  # cannot be installed with pip
-                'qtpy',
+                'pyqt5>=5.15',
+                'qtpy>=2',
                 'nbconvert',
                 'jupyter-client',
-                'netifaces',
-                'lmfit>=1.0.1']
+                'netifaces2>=0.0.22',
+                'lmfit>=1.0.1,<1.3.3']
 if sys.version_info >= (3,4):  # python version dependencies
     requirements += ['quamash']
 else:  # python 2.7
@@ -132,10 +131,7 @@ setup(name='pyrpl',
       author_email='neuhaus@lkb.upmc.fr',
       url='http://lneuhaus.github.io/pyrpl/',
       license='GPLv3',
-      classifiers=['Programming Language :: Python :: 2.7',
-                   'Programming Language :: Python :: 3.4',
-                   'Programming Language :: Python :: 3.5',
-                   'Programming Language :: Python :: 3.6',
+      classifiers=['Programming Language :: Python :: 3.9',
                    'Programming Language :: C',
                    'Natural Language :: English',
                    'Development Status :: 4 - Beta',
@@ -145,6 +141,7 @@ setup(name='pyrpl',
       keywords='RedPitaya DSP FPGA IIR PDH synchronous detection filter PID '
                'control lockbox servo feedback lock quantum optics',
       platforms='any',
+      python_requires='>=3.9,<3.10',
       packages=find_packages(), #['pyrpl'],
       package_data={'pyrpl': ['fpga/*',
                               'pyrpl_server/*',
