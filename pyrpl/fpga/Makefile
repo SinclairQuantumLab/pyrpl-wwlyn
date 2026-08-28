@@ -19,9 +19,11 @@ VIVADO = D:/Vivado_2015.4/Vivado/2015.4/bin/vivado -nolog -nojournal -mode batch
 
 .PHONY: os2-dtbo
 
-os2-dtbo: red_pitaya_os2_z10.dtbo
+OS2_DTBO = red_pitaya_os2_z10.dtbo red_pitaya_os2_z10_fpga_bin.dtbo
 
-red_pitaya_os2_z10.dtbo: red_pitaya_os2_z10.dts
+os2-dtbo: $(OS2_DTBO)
+
+%.dtbo: %.dts
 	dtc -@ -I dts -O dtb -o $@ $<
 
 all: clean $(FPGA_BIN) postclean

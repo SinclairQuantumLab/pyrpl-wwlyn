@@ -171,11 +171,12 @@ upgrade.
 
 ## Recommended sequence and acceptance gates
 
-1. **Original Z7010 on a pinned OS 2.07 image (implemented offline).**
+1. **Original Z7010 on OS 2.07+ (implemented offline).**
    Preserve the exact fork BIN.
-   Add capability-based OS detection, the fixed OS 2 staging filename
-   `/opt/pyrpl/fpga.bit.bin`, overlay invocation, status/diagnostic capture,
-   server checks, and offline regression tests. Do not rely only on
+   Add capability-based OS detection, inspect the installed overlay contract
+   for its fixed `fpga.bit.bin` or `fpga.bin` staging filename, invoke the
+   overlay, capture status/diagnostics, check the server, and add offline
+   regression tests. Do not rely only on
    `/root/.version`; this fork's known legacy image reports inconsistent
    version numbers, so also inspect `/opt/redpitaya/version.txt` and loader
    capabilities.

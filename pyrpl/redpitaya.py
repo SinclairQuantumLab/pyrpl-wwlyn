@@ -41,8 +41,16 @@ from uuid import uuid1 as uid
 
 FORK_BITSTREAM_SHA256 = (
     'dc6e71fb04d3a5a67731a5ddb99e7f80395a1c2fee2b8ae59168ce4252cee9ed')
-OS2_Z10_DTBO_SHA256 = (
-    '41a1c828bc5a7bbe99542353dfd2fbe181927e79b0e7515b86e1abbc006577f9')
+OS2_Z10_DTBO_FILENAMES = {
+    'fpga.bit.bin': 'fpga/red_pitaya_os2_z10.dtbo',
+    'fpga.bin': 'fpga/red_pitaya_os2_z10_fpga_bin.dtbo',
+}
+OS2_Z10_DTBO_SHA256 = {
+    'fpga.bit.bin':
+        '41a1c828bc5a7bbe99542353dfd2fbe181927e79b0e7515b86e1abbc006577f9',
+    'fpga.bin':
+        '99f0fd0c3ce394fb0c86e4dec95895b8a5855cc80ebbfd5fedc961fb9ed4a35c',
+}
 
 # input is the wrong function in python 2
 try:
@@ -62,7 +70,7 @@ defaultparameters = dict(
     reloadserver=True,  # reinstall the server at startup if not necessary?
     reloadfpga=True,  # reload the fpga bitfile at startup?
     filename='fpga/red_pitaya.bin',  # local FPGA bitstream
-    dtbo_filename='fpga/red_pitaya_os2_z10.dtbo',  # OS 2.07 Z7010 overlay
+    dtbo_filename='fpga/red_pitaya_os2_z10.dtbo',  # OS 2 Z7010 overlay
     recompileserver=False,  # recompile the server source on the redpitaya when the server is re-installed?
     serverbinfilename='fpga.bin',  # name of the binfile on the server
     serverdirname = "//opt//pyrpl//",  # server directory for server app and bitfile
@@ -104,7 +112,7 @@ class RedPitaya(object):
             reloadserver=False,  # reinstall the server at startup if not necessary?
             reloadfpga=True,  # reload the fpga bitfile at startup?
             filename='fpga/red_pitaya.bin',  # local FPGA bitstream
-            dtbo_filename='fpga/red_pitaya_os2_z10.dtbo',  # OS 2.07 Z7010 overlay
+            dtbo_filename='fpga/red_pitaya_os2_z10.dtbo',  # OS 2 Z7010 overlay
             serverbinfilename='fpga.bin',  # name of the binfile on the server
             serverdirname = "//opt//pyrpl//",  # server directory for server app and bitfile
             leds_off=True,  # turn off all GPIO lets at startup (improves analog performance)
@@ -338,16 +346,31 @@ class RedPitaya(object):
         """Detect the ecosystem release, preferring version.txt metadata."""
         self.ssh.ask()
         ecosystem_text = self.ssh.ask(
-            'cat /opt/redpitaya/version.txt 2>/dev/null')
-        root_text = self.ssh.ask('cat /root/.version 2>/dev/null')
-        ecosystem_version = self._parse_os_version(ecosystem_text)
-        root_version = self._parse_os_version(root_text)
+            'cat /opt/redpitaya/version.txt 2>/dev/null; '
+            'echo PYRPL_ECOSYSTEM_VERSION_""END')
+        ecosystem_text = self._wait_for_output_marker(
+            ecosystem_text, 'PYRPL_ECOSYSTEM_VERSION_END')
+        ecosystem_complete = (
+            'PYRPL_ECOSYSTEM_VERSION_END' in ecosystem_text)
+        root_text = self.ssh.ask(
+            'cat /root/.version 2>/dev/null; '
+            'echo PYRPL_ROOT_VERSION_""END')
+        root_text = self._wait_for_output_marker(
+            root_text, 'PYRPL_ROOT_VERSION_END')
+        root_complete = 'PYRPL_ROOT_VERSION_END' in root_text
+        ecosystem_version = self._parse_os_version(
+            ecosystem_text if ecosystem_complete else '')
+        root_version = self._parse_os_version(
+            root_text if root_complete else '')
         if ecosystem_version != 'unknown':
             self.os_version = ecosystem_version
             self.os_version_source = '/opt/redpitaya/version.txt'
-        else:
+        elif ecosystem_complete and root_version != 'unknown':
             self.os_version = root_version
             self.os_version_source = '/root/.version'
+        else:
+            self.os_version = 'unknown'
+            self.os_version_source = 'version probe'
         self.os_version_tuple = self._version_tuple(self.os_version)
         self.logger.info('Detected Red Pitaya OS %s from %s.',
                          self.os_version, self.os_version_source)
@@ -366,17 +389,25 @@ class RedPitaya(object):
             'echo PYRPL_CAPABILITIES_""END')
         capability_result = self._wait_for_output_marker(
             capability_result, 'PYRPL_CAPABILITIES_END')
-        self.overlay_available = self._shell_marker_succeeded(
-            capability_result, 'PYRPL_OVERLAY_AVAILABLE',
-            'PYRPL_OVERLAY_MISSING')
-        self.xdevcfg_available = self._shell_marker_succeeded(
-            capability_result, 'PYRPL_XDEVCFG_AVAILABLE',
-            'PYRPL_XDEVCFG_MISSING')
+        capabilities_complete = 'PYRPL_CAPABILITIES_END' in capability_result
+        self.overlay_available = (
+            capabilities_complete and self._shell_marker_succeeded(
+                capability_result, 'PYRPL_OVERLAY_AVAILABLE',
+                'PYRPL_OVERLAY_MISSING'))
+        self.xdevcfg_available = (
+            capabilities_complete and self._shell_marker_succeeded(
+                capability_result, 'PYRPL_XDEVCFG_AVAILABLE',
+                'PYRPL_XDEVCFG_MISSING'))
 
         version = self.os_version_tuple
-        if (len(version) >= 2 and version[0] == 2 and version[1] == 7 and
+        self.os2_fpga_filename = None
+        if (len(version) >= 2 and version[0] == 2 and version[1] >= 7 and
                 self.overlay_available):
-            self.fpga_loader = 'overlay'
+            self.os2_fpga_filename = self._read_os2_overlay_contract()
+            if self.os2_fpga_filename in OS2_Z10_DTBO_FILENAMES:
+                self.fpga_loader = 'overlay'
+            else:
+                self.fpga_loader = 'unsupported'
         elif (version and version[0] <= 1 and
               self.xdevcfg_available and not self.overlay_available):
             self.fpga_loader = 'legacy'
@@ -386,18 +417,50 @@ class RedPitaya(object):
                          self.fpga_loader)
         return self.fpga_loader
 
+    def _read_os2_overlay_contract(self):
+        """Return the fixed custom FPGA basename used by OS 2 overlay.sh."""
+        command = (
+            'cat /opt/redpitaya/sbin/overlay.sh 2>/dev/null; '
+            "printf '\nPYRPL_OVERLAY_SCRIPT_\"\"END\n'")
+        result = self.ssh.ask(command)
+        result = self._wait_for_output_marker(
+            result, 'PYRPL_OVERLAY_SCRIPT_END')
+        self.overlay_script = result
+        if 'PYRPL_OVERLAY_SCRIPT_END' not in result:
+            self.logger.warning(
+                'Timed out while reading /opt/redpitaya/sbin/overlay.sh; '
+                'refusing to load.')
+            return None
+        matches = re.findall(
+            r'(?m)^[ \t]*CUSTOMFPGA[ \t]*=[ \t]*["\']?'
+            r'/opt/(?:\$1|\$\{1\})/'
+            r'(fpga(?:\.bit)?\.bin)["\']?[ \t\r]*$',
+            result)
+        filename = matches[-1] if matches else None
+        if filename is None:
+            self.logger.warning(
+                'Could not identify the fixed custom FPGA filename in '
+                '/opt/redpitaya/sbin/overlay.sh; refusing to load.')
+        else:
+            self.logger.info(
+                'Detected OS 2 overlay custom FPGA filename: %s.', filename)
+        return filename
+
     def _require_supported_loader(self):
         if not hasattr(self, 'fpga_loader'):
             self.detect_platform()
         if self.fpga_loader != 'unsupported':
             return
         if (self.os_version_tuple and self.os_version_tuple[0] == 2 and
-                self.os_version_tuple[1:2] != (7,)):
-            detail = ('Only the pinned OS 2.07 overlay contract is supported; '
-                      'other OS 2 releases use different FPGA loading paths '
-                      'or filenames.')
+                self.os_version_tuple[1:2] < (7,)):
+            detail = ('OS 2 releases before 2.07 use a different FPGA loading '
+                      'path and are not part of this upgrade.')
+        elif (self.os_version_tuple and self.os_version_tuple[0] == 2):
+            detail = ('OS 2.07+ was detected, but overlay.sh is unavailable or '
+                      'its fixed custom FPGA filename is not one of the '
+                      'validated fpga.bit.bin/fpga.bin contracts.')
         elif self.os_version_tuple and self.os_version_tuple[0] >= 3:
-            detail = 'OS 3 is not part of this pinned OS 2.07 upgrade.'
+            detail = 'OS 3 is not part of this OS 2.07+ upgrade.'
         else:
             detail = ('Neither a supported overlay.sh installation nor a '
                       'legacy /dev/xdevcfg character device was detected.')
@@ -416,6 +479,7 @@ class RedPitaya(object):
             "printf '\\nPYRPL_PROFILE_\"\"END\\n'")
         result = self.ssh.ask(command)
         result = self._wait_for_output_marker(result, 'PYRPL_PROFILE_END')
+        complete = 'PYRPL_PROFILE_END' in result
 
         def last_match(pattern):
             matches = re.findall(pattern, result, flags=re.IGNORECASE)
@@ -426,6 +490,7 @@ class RedPitaya(object):
             'fpga': last_match(
                 r'PYRPL_PROFILE_FPGA:([A-Za-z0-9_.-]+)'),
             'zynq': last_match(r'PYRPL_PROFILE_ZYNQ:(Z70(?:10|20))'),
+            'complete': complete,
             'raw': result,
         }
         self.hardware_profile = profile
@@ -438,7 +503,7 @@ class RedPitaya(object):
             profile_id = int(profile['id'])
         except (TypeError, ValueError):
             profile_id = None
-        valid = (profile_id in (1, 2) and
+        valid = (profile['complete'] and profile_id in (1, 2) and
                  profile['fpga'] == 'z10_125' and
                  profile['zynq'] == 'Z7010')
         if not valid:
@@ -474,19 +539,21 @@ class RedPitaya(object):
         return directory + '/' + filename.lstrip('/\\')
 
     @staticmethod
-    def _validate_os2_dtbo(source):
+    def _validate_os2_dtbo(source, fpga_filename):
         with open(source, 'rb') as source_file:
             data = source_file.read()
+        expected_digest = OS2_Z10_DTBO_SHA256[fpga_filename]
         digest = hashlib.sha256(data).hexdigest()
-        if digest != OS2_Z10_DTBO_SHA256:
+        if digest != expected_digest:
             raise OSError(
                 'The OS 2 DTBO does not match this fork\'s approved Z7010 '
-                'overlay (expected SHA-256 %s, got %s): %s' %
-                (OS2_Z10_DTBO_SHA256, digest, source))
-        if b'fpga.bit.bin\x00' not in data:
+                '%s overlay (expected SHA-256 %s, got %s): %s' %
+                (fpga_filename, expected_digest, digest, source))
+        firmware_string = fpga_filename.encode('ascii') + b'\x00'
+        if firmware_string not in data:
             raise OSError(
-                'The OS 2 DTBO does not request firmware fpga.bit.bin: %s' %
-                source)
+                'The OS 2 DTBO does not request firmware %s: %s' %
+                (fpga_filename, source))
         forbidden = (b'xadc_wiz', b'xlnx,axi-xadc', b'xlnx,xadc-wiz')
         if any(value in data for value in forbidden):
             raise OSError(
@@ -519,7 +586,7 @@ class RedPitaya(object):
                       (source, destination)) from last_error
 
     def update_fpga(self, filename=None, dtbo_filename=None):
-        """Program the fork image on legacy OS or pinned OS 2.07 safely."""
+        """Program the fork image on legacy OS or supported OS 2.07+."""
         self._require_supported_loader()
         bitstream_name = (filename if filename is not None else
                           self.parameters['filename'])
@@ -529,17 +596,25 @@ class RedPitaya(object):
                 bitstream_name == defaultparameters['filename']))
         dtbo_source = None
         if self.fpga_loader == 'overlay':
-            dtbo_name = (dtbo_filename if dtbo_filename is not None else
-                         self.parameters['dtbo_filename'])
+            configured_dtbo = self.parameters['dtbo_filename']
+            if dtbo_filename is not None:
+                dtbo_name = dtbo_filename
+            elif configured_dtbo == defaultparameters['dtbo_filename']:
+                dtbo_name = OS2_Z10_DTBO_FILENAMES[
+                    self.os2_fpga_filename]
+            else:
+                dtbo_name = configured_dtbo
             dtbo_source = self._local_fpga_file(
                 dtbo_name, 'FPGA device-tree overlay',
                 package_relative=(
-                    dtbo_name == defaultparameters['dtbo_filename']))
+                    dtbo_name in OS2_Z10_DTBO_FILENAMES.values()))
             self._validate_os2_bitstream(source)
-            self._validate_os2_dtbo(dtbo_source)
+            self._validate_os2_dtbo(
+                dtbo_source, self.os2_fpga_filename)
             self._validate_os2_z10_profile()
             server_directory = '/opt/pyrpl/'
-            bin_file_path = '/opt/pyrpl/fpga.bit.bin'
+            bin_file_path = self._server_file(
+                server_directory, self.os2_fpga_filename)
             dtbo_file_path = '/opt/pyrpl/fpga.dtbo'
         else:
             server_directory = self.parameters['serverdirname']
@@ -553,7 +628,8 @@ class RedPitaya(object):
         rw_requested = False
         web_services_stopped = False
         diagnostics = {'loader': self.fpga_loader,
-                       'os_version': self.os_version}
+                       'os_version': self.os_version,
+                       'fpga_filename': self.os2_fpga_filename}
 
         try:
             self.end()
@@ -577,7 +653,7 @@ class RedPitaya(object):
             if self.fpga_loader == 'overlay':
                 update_cmd = (
                     '/opt/redpitaya/sbin/overlay.sh pyrpl '
-                    '/opt/pyrpl/fpga.bit.bin /opt/pyrpl/fpga.dtbo')
+                    + bin_file_path + ' ' + dtbo_file_path)
                 overlay_result = self.ssh.ask(
                     update_cmd +
                     ' && echo PYRPL_OVERLAY_""OK '
@@ -614,11 +690,15 @@ class RedPitaya(object):
                         'FPGA overlay returned successfully, but the FPGA '
                         'manager is not operating:\n%s' %
                         (manager_state + kernel_log))
-                if 'pyrpl_' not in loaded_info.lower():
+                lower_loaded_info = loaded_info.lower()
+                if (not all(value in lower_loaded_info for value in
+                            ('pyrpl_', bin_file_path.lower(),
+                             dtbo_file_path.lower()))):
                     raise OSError(
                         'FPGA overlay returned successfully, but '
-                        '/tmp/loaded_fpga.inf does not identify the custom '
-                        'PyRPL load:\n%s' % loaded_info)
+                        '/tmp/loaded_fpga.inf does not identify the expected '
+                        'custom PyRPL files %s and %s:\n%s' %
+                        (bin_file_path, dtbo_file_path, loaded_info))
                 self.logger.info(
                     'FPGA overlay loaded successfully on Red Pitaya OS %s.',
                     self.os_version)

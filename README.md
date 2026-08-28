@@ -39,7 +39,7 @@ conda activate pyrpl-py314
 ```
 
 Both methods install this checkout, including its fork-specific FPGA image and
-OS 2 Z7010 overlay.
+the two OS 2 Z7010 overlay filename variants.
 The declared dependency bounds support NumPy 2 without manual monkeypatches.
 Do not
 install the unrelated `pyrpl` package from PyPI over this checkout.
@@ -83,13 +83,15 @@ original-generation STEMlab 125-14 with Zynq-7010. The loader supports:
 
 - the author's Red Pitaya OS 1.04-18 environment through `/dev/xdevcfg`, after
   verifying that it is a character device; and
-- Red Pitaya OS 2.07 on ecosystem profile 1 or 2 (`z10_125`, Z7010), through
-  FPGA Manager and the packaged `red_pitaya_os2_z10.dtbo`.
+- Red Pitaya OS 2.07+ on ecosystem profile 1 or 2 (`z10_125`, Z7010), through
+  FPGA Manager and a packaged, fork-specific overlay.
 
-Other OS 2 minor releases, OS 3, Gen 2, and Z7020 targets are refused before
-FPGA files are uploaded. OS 2.07 support has passed hardware-free regression
-tests but still requires a controlled field validation before it should be
-considered proven.
+The loader reads the installed `overlay.sh` and supports both known OS 2 custom
+firmware basenames, `fpga.bit.bin` and `fpga.bin`, with a matching hash-pinned
+DTBO for each. An unknown loader contract, early OS 2, OS 3, Gen 2, or Z7020 is
+refused before FPGA files are uploaded. OS 2.07+ support has passed
+hardware-free regression tests but still requires controlled field validation
+before it should be considered proven.
 The built-in FPGA filenames resolve from the installed package, so launching
 PyRPL from another working directory does not substitute another image.
 

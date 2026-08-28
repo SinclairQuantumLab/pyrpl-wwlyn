@@ -5,8 +5,8 @@ Branch: `develop/red-pitaya-upgrade`
 Baseline: `c535358` (`Upgrade the fork to Python 3.14`)
 
 Target: the author's original-generation STEMlab 125-14 with Zynq-7010,
-running a pinned Red Pitaya OS 2.07 release. This does not claim Gen 2, Z7020,
-early OS 2, or OS 3 compatibility.
+running Red Pitaya OS 2.07 or newer within major version 2. This does not claim
+Gen 2, Z7020, early OS 2, or OS 3 compatibility.
 
 ## Preserved FPGA image and new overlay
 
@@ -16,31 +16,37 @@ The fork bitstream was not rebuilt or changed:
 - SHA-256:
   `dc6e71fb04d3a5a67731a5ddb99e7f80395a1c2fee2b8ae59168ce4252cee9ed`
 
-OS 2.07 needs FPGA Manager/device-tree integration. The fork now packages a
-source-controlled overlay specifically for the preserved Z7010 image:
+OS 2.07+ needs FPGA Manager/device-tree integration. Two observed OS 2
+`overlay.sh` generations stage custom firmware under different basenames, so
+the fork packages two source-controlled variants for the preserved Z7010 image:
 
-- source: `pyrpl/fpga/red_pitaya_os2_z10.dts`
-- compiled overlay: `pyrpl/fpga/red_pitaya_os2_z10.dtbo`
-- DTBO SHA-256:
+- `red_pitaya_os2_z10.dts` / `red_pitaya_os2_z10.dtbo` requests
+  `fpga.bit.bin`; DTBO SHA-256:
   `41a1c828bc5a7bbe99542353dfd2fbe181927e79b0e7515b86e1abbc006577f9`
+- `red_pitaya_os2_z10_fpga_bin.dts` /
+  `red_pitaya_os2_z10_fpga_bin.dtbo` requests `fpga.bin`; DTBO SHA-256:
+  `99f0fd0c3ce394fb0c86e4dec95895b8a5855cc80ebbfd5fedc961fb9ed4a35c`
 
-The source was derived by comparing the maintained PyRPL overlay with this
-fork's implemented RTL and Vivado block design. It supplies the four fabric
-clocks (125, 250, 50, and 200 MHz) and the two AXI fabric-interface nodes. It
-intentionally omits the maintained overlay's AXI XADC node: this fork directly
+The sources differ only in `firmware-name`. They were derived by comparing the
+maintained PyRPL overlay with this fork's implemented RTL and Vivado block
+design. They supply the four fabric clocks (125, 250, 50, and 200 MHz) and the
+two AXI fabric-interface nodes. They intentionally omit the maintained
+overlay's AXI XADC node: this fork directly
 instantiates `XADC` in `pyrpl/fpga/rtl/red_pitaya_ams.v` and exposes those
 measurements through its own register map.
 
-The tracked DTBO was compiled with Device Tree Compiler 1.7.2:
+The tracked DTBOs were compiled with Device Tree Compiler 1.7.2:
 
 ```text
 dtc -@ -I dts -O dtb -o red_pitaya_os2_z10.dtbo red_pitaya_os2_z10.dts
+dtc -@ -I dts -O dtb -o red_pitaya_os2_z10_fpga_bin.dtbo red_pitaya_os2_z10_fpga_bin.dts
 ```
 
 `dtc` reports overlay address-cell warnings for the AFI nodes. The source
 deliberately follows the overlay form used by the supported OS 2 base device
-tree; the compiled tree was decompiled and inspected. Recompilation must
-produce the exact hash above or the binary change must receive hardware review.
+tree; both compiled trees were decompiled and inspected. Recompilation must
+produce the exact hashes above or the binary change must receive hardware
+review.
 
 ## Loader contract
 
@@ -51,24 +57,28 @@ probes actual loader capabilities.
 - Legacy OS selects `/dev/xdevcfg` only when it is a character device and no
   overlay loader is present. It checks the device again immediately before
   writing and verifies the shell result.
-- OS 2.07 selects `/opt/redpitaya/sbin/overlay.sh` only when that executable
-  exists.
+- OS 2.07+ selects `/opt/redpitaya/sbin/overlay.sh` only when that executable
+  exists and its source declares a recognized fixed custom FPGA basename.
+- Version, capability, overlay-source, and hardware-profile probes require
+  terminal markers. Truncated SSH output is refused before any mutation.
 - Early OS 2 and OS 3 stop with an actionable unsupported-loader error.
-- Later OS 2 minor releases are also refused. Newer ecosystem source changed
-  the custom filename from `fpga.bit.bin` to `fpga.bin`; that contract and its
-  matching overlay firmware name need a separate implementation and test.
+- Historical `fpga.bit.bin` and newer `fpga.bin` OS 2 contracts are supported.
+  The loader inspects the installed script rather than inferring the contract
+  from the release number. An unknown future contract is refused.
 - Before an OS 2 upload or other mutation, the loader requires Red Pitaya
   ecosystem profile 1 or 2, FPGA path `z10_125`, and Zynq type `Z7010`.
   Gen 2 and Z7020 profiles are refused.
 - Built-in assets resolve relative to the installed `pyrpl` package, not the
   process working directory. Explicit custom relative paths remain relative to
   the working directory.
-- Both OS 2 asset hashes must match the approved fork pair before any upload or
-  device mutation. A renamed upstream or modified artifact is refused.
-- OS 2 uses the fixed paths `/opt/pyrpl/fpga.bit.bin` and
-  `/opt/pyrpl/fpga.dtbo`, as required by the Red Pitaya `pyrpl` overlay entry.
+- The bitstream hash and selected matching DTBO hash must pass before any upload
+  or device mutation. A renamed upstream, cross-paired, or modified artifact is
+  refused.
+- OS 2 uses `/opt/pyrpl/fpga.bit.bin` or `/opt/pyrpl/fpga.bin`, as declared by
+  the installed script, plus fixed `/opt/pyrpl/fpga.dtbo`.
 - Success requires the overlay command to succeed, FPGA Manager to report
-  `operating`, and `/tmp/loaded_fpga.inf` to identify a `pyrpl_` load.
+  `operating`, and `/tmp/loaded_fpga.inf` to identify the exact staged BIN and
+  DTBO paths in a `pyrpl_` load.
 - Failed loads retain the staged files and collect the overlay log, manager
   state, and kernel tail for diagnosis. The code does not retry programming
   after the overlay begins.
@@ -98,20 +108,22 @@ commit or handoff summary rather than treating this file as an append-only log.
 
 Current offline state on CPython 3.14.4:
 
-- DTC 1.7.2 recompilation produces the tracked DTBO hash exactly.
+- DTC 1.7.2 recompilation produces both tracked DTBO hashes exactly.
 - `compileall` succeeds for `pyrpl`.
-- The loader, Python 3.14, and real-ipykernel unittest set passes 27 tests.
+- The loader, Python 3.14, and real-ipykernel unittest set passes 31 tests.
 - The safe Nose NG compatibility set passes 17 tests.
-- A wheel built from the working tree contains the exact BIN, DTS, and sole
-  DTBO; both packaged binary hashes match.
+- A wheel built from the working tree contains the exact BIN and exactly two
+  matching DTS/DTBO variants; all three packaged binary hashes match.
 - That wheel installs into a new Python 3.14 environment outside the source
-  tree, where all 18 loader tests pass.
+  tree, where all 22 loader tests pass.
 
 ## Live validation still required
 
 No physical Red Pitaya has been contacted or programmed by this implementation
-work. A controlled live test needs separate explicit authorization and a board
-booted from recoverable OS 2.07 media. Before loading, collect the reported OS,
+work. Controlled live tests need separate explicit authorization and the board
+booted from recoverable OS media. To cover OS 2.07+ rather than one release,
+validate at least one `fpga.bit.bin` OS 2 image and one newer `fpga.bin` OS 2
+image. Before loading, collect the reported OS, detected overlay contract,
 profile ID, FPGA path, Zynq type, and uptime. Then require all of the following:
 
 1. the profile gate identifies the original Z7010 STEMlab 125-14;

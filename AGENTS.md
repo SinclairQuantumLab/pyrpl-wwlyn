@@ -9,7 +9,7 @@
   evidence in a separate, non-rewriting commit and in
   `.agents/python-3.14-upgrade-changelog.md`.
 - Preserve the author's behavior. The Python 3.14 upgrade is complete; the
-  `develop/red-pitaya-upgrade` branch separately adds pinned Red Pitaya OS 2.07
+  `develop/red-pitaya-upgrade` branch separately adds Red Pitaya OS 2.07+
   loader/device-tree integration for the author's original Z7010 board.
 - Do not import implementation changes or FPGA assets from current official
   PyRPL merely because they are newer.
@@ -27,12 +27,15 @@
   `/opt/redpitaya/version.txt`, which reports version `1.04`, build `18`.
 - Do not modify or rebuild `pyrpl/fpga/red_pitaya.bin`. Its expected SHA-256
   is `dc6e71fb04d3a5a67731a5ddb99e7f80395a1c2fee2b8ae59168ce4252cee9ed`.
-- The author fork originally contained no DTBO. The user has authorized the
-  source-derived `pyrpl/fpga/red_pitaya_os2_z10.dtbo` only for the separate,
-  pinned OS 2.07 upgrade. Its expected SHA-256 is
-  `41a1c828bc5a7bbe99542353dfd2fbe181927e79b0e7515b86e1abbc006577f9`.
-  It is not the maintained/upstream PyRPL overlay and must not acquire an AXI
-  XADC node. Do not alter any FPGA RTL or rebuild the bitstream as part of this
+- The author fork originally contained no DTBO. The user has authorized two
+  source-derived variants for the separate OS 2.07+ upgrade. They differ only
+  in the firmware basename required by the installed `overlay.sh`:
+  - `red_pitaya_os2_z10.dtbo` (`fpga.bit.bin`), SHA-256
+    `41a1c828bc5a7bbe99542353dfd2fbe181927e79b0e7515b86e1abbc006577f9`;
+  - `red_pitaya_os2_z10_fpga_bin.dtbo` (`fpga.bin`), SHA-256
+    `99f0fd0c3ce394fb0c86e4dec95895b8a5855cc80ebbfd5fedc961fb9ed4a35c`.
+  Neither is the maintained/upstream PyRPL overlay, and neither may acquire an
+  AXI XADC node. Do not alter FPGA RTL or rebuild the bitstream as part of this
   loader work.
 - Do not contact, restart, or program a physical Red Pitaya unless live-device
   testing is explicitly requested. Running `test.ipynb`, `reloadfpga=True`,
@@ -66,7 +69,8 @@
   environment, inspect the wheel, and verify the fork bitstream hash.
 - OS-loader changes must also pass
   `python -m unittest pyrpl.test.test_redpitaya_fpga_loader`. The wheel must
-  contain the exact fork BIN plus `red_pitaya_os2_z10.dts` and its exact DTBO.
+  contain the exact fork BIN plus both source-identical firmware-name DTS/DTBO
+  variants and no other DTBO.
 
 ## Configuration and notebooks
 
@@ -86,15 +90,18 @@
   run OS 2, while "Gen 2" includes materially different Z7010, Z7020, and
   TI-based profiles.
 - The authorized implementation target is the original Z7010 STEMlab 125-14
-  (ecosystem profile 1 or 2, FPGA path `z10_125`) on the pinned OS 2.07 line.
-  Preserve the exact fork bitstream. Refuse other OS 2 minor releases, OS 3,
+  (ecosystem profile 1 or 2, FPGA path `z10_125`) on OS 2.07 or newer within
+  major version 2. Preserve the exact fork bitstream. Refuse early OS 2, OS 3,
   Gen 2, and Z7020 before uploading or changing device state.
-- OS 2 loading must use `/opt/pyrpl/fpga.bit.bin` and
-  `/opt/pyrpl/fpga.dtbo`, invoke `/opt/redpitaya/sbin/overlay.sh`, and require
-  both approved local hashes before upload, a successful overlay result, FPGA
-  Manager state `operating`, expected
-  `/tmp/loaded_fpga.inf` identity, monitor-client connection, and positive
-  fork register metadata. Preserve diagnostics and staged files after failure.
+- OS 2.07+ loading must inspect the installed `overlay.sh` and recognize only
+  its known fixed custom basenames, `/opt/pyrpl/fpga.bit.bin` or
+  `/opt/pyrpl/fpga.bin`. It must select the hash-pinned DTBO whose
+  `firmware-name` matches that basename, stage `/opt/pyrpl/fpga.dtbo`, invoke
+  `/opt/redpitaya/sbin/overlay.sh`, and require both approved local hashes
+  before upload, a successful overlay result, FPGA Manager state `operating`,
+  expected `/tmp/loaded_fpga.inf` identity, monitor-client connection, and
+  positive fork register metadata. Preserve diagnostics and staged files after
+  failure.
 - Do not copy the maintained/upstream PyRPL DTBO into this fork. It describes
   an AXI XADC at `0x83c00000`, whereas this fork instantiates and controls XADC
   in `pyrpl/fpga/rtl/red_pitaya_ams.v`. A fork DTBO must be derived from the

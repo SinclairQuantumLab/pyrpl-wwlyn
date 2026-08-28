@@ -12,17 +12,21 @@ The author produced that image for an original-generation STEMlab 125-14 with
 a Zynq-7010 on Red Pitaya OS 1.04-18. Its complete reproducible-build
 provenance is unavailable.
 
-For Red Pitaya OS 2.07, this fork packages a source-derived companion overlay:
+For Red Pitaya OS 2.07+, this fork packages two source-derived companion
+overlays. They are identical except for the firmware basename required by the
+installed Red Pitaya `overlay.sh`:
 
 | file | purpose |
 | --- | --- |
-| `red_pitaya_os2_z10.dts` | reviewable device-tree overlay source for the preserved Z7010 image |
-| `red_pitaya_os2_z10.dtbo` | compiled overlay loaded by FPGA Manager; SHA-256 `41a1c828bc5a7bbe99542353dfd2fbe181927e79b0e7515b86e1abbc006577f9` |
+| `red_pitaya_os2_z10.dts` | source using historical OS 2 `fpga.bit.bin` |
+| `red_pitaya_os2_z10.dtbo` | compiled `fpga.bit.bin` overlay; SHA-256 `41a1c828bc5a7bbe99542353dfd2fbe181927e79b0e7515b86e1abbc006577f9` |
+| `red_pitaya_os2_z10_fpga_bin.dts` | source using newer OS 2 `fpga.bin` |
+| `red_pitaya_os2_z10_fpga_bin.dtbo` | compiled `fpga.bin` overlay; SHA-256 `99f0fd0c3ce394fb0c86e4dec95895b8a5855cc80ebbfd5fedc961fb9ed4a35c` |
 
 The overlay enables the implemented fabric clocks and AXI interfaces. It does
 not contain the AXI XADC node found in maintained PyRPL: this fork instantiates
 the Zynq `XADC` primitive directly in `rtl/red_pitaya_ams.v` and exposes it
-through the PyRPL register map. The BIN/DTBO pair is restricted in software to
+through the PyRPL register map. Each BIN/DTBO pair is restricted in software to
 original Z7010 ecosystem profiles 1 and 2 (`z10_125`). It is not approved for
 Gen 2, Z7020, early OS 2, or OS 3.
 
@@ -37,7 +41,7 @@ Gen 2, Z7020, early OS 2, or OS 3.
 | `fpga/ip/`      | third party IP, for now Zynq block diagrams
 | `fpga/rtl/`     | Verilog (SystemVerilog) "Register-Transfer Level"
 | `fpga/sdc/`     | "Synopsys Design Constraints" contains Xilinx design constraints
-| `fpga/red_pitaya_os2_z10.dts` | source for the OS 2.07 Z7010 overlay
+| `fpga/red_pitaya_os2_z10*.dts` | sources for the OS 2.07+ Z7010 overlays
 
 # Build process
 
@@ -68,11 +72,16 @@ hash-pinned fork image.
 
 Device tree is used by Linux to describe features and address space of memory mapped hardware attached to the CPU.
 
-On OS 2.07, `overlay.sh` loads both the FPGA image and
-`red_pitaya_os2_z10.dtbo`. The overlay source declares four fabric clocks at
-125, 250, 50, and 200 MHz, the HP0/HP1 fabric interfaces, and the required
-`fpga.bit.bin` firmware name. It does not replace the board's complete base
-device tree.
+On OS 2.07+, `overlay.sh` loads both the FPGA image and its DTBO. Historical
+releases stage custom firmware as `fpga.bit.bin`; newer ecosystem source uses
+`fpga.bin`. Because `fpgautil` copies the input basename into
+`/lib/firmware`, the overlay's `firmware-name` must match. PyRPL inspects the
+installed script and selects the corresponding tracked variant. An unfamiliar
+contract is rejected before upload.
+
+Both sources declare four fabric clocks at 125, 250, 50, and 200 MHz and the
+HP0/HP1 fabric interfaces. They do not replace the board's complete base device
+tree.
 
 Rebuild only the overlay with Device Tree Compiler 1.7.2 or an explicitly
 validated equivalent:
@@ -80,9 +89,11 @@ validated equivalent:
 ```bash
 make os2-dtbo
 sha256sum red_pitaya_os2_z10.dtbo
+sha256sum red_pitaya_os2_z10_fpga_bin.dtbo
 ```
 
-The expected hash is the value recorded above. `dtc` emits address-cell
+The expected hashes are recorded above. The two DTS files must remain identical
+except for `firmware-name`. `dtc` emits address-cell
 warnings for the AFI overlay nodes; decompiling the tracked result confirms the
 intended nodes. Any semantic or binary change requires hardware review and a
 new controlled field validation.
