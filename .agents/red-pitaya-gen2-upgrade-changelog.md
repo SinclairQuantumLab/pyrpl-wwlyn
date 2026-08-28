@@ -2,9 +2,9 @@
 
 Branch: `develop/red-pitaya-upgrade`
 
-Implementation commit: pending. The repository changes must be committed and
-the immutable commit ID entered in `.agents/red-pitaya-live-test-plan.md`
-before any Gen 2 board is attached.
+Implementation commit: `80b6291199dfb7a7d784e4c0d355c5905735621f`.
+Use that immutable candidate for the live-device gates recorded in
+`.agents/red-pitaya-live-test-plan.md`.
 
 This upgrade is repository-side only. It did not contact, restart, or program
 a Red Pitaya and did not modify or rebuild the fork bitstream or either DTBO.

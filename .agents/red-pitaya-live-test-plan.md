@@ -12,33 +12,32 @@ access by itself. Each session still requires explicit live-device approval.
 | Python 3.14 acceptance | `c535358` | Original STEMlab 125-14 Z7010, OS `1.04-18` | Pending |
 | OS 2, `fpga.bit.bin` contract | `ddb1077` | Original STEMlab 125-14 Z7010, OS 2.07+ whose installed `overlay.sh` fixes `/opt/pyrpl/fpga.bit.bin` | Pending |
 | OS 2, `fpga.bin` contract | `ddb1077` | Original STEMlab 125-14 Z7010, OS 2.07+ whose installed `overlay.sh` fixes `/opt/pyrpl/fpga.bin` | Pending |
-| Final-branch original-board regression | Gen 2 implementation commit: **TBD** | Original STEMlab 125-14 Z7010, one of the OS 2 images accepted above | Blocked until the current Gen 2 working tree is committed |
-| Standard Gen 2 acceptance | Same Gen 2 implementation commit: **TBD** | STEMlab 125-14 Gen 2 Z7010, profile 20 or 31 with `z10_125_v2`, OS 2.07+ | Pending device |
-| Pro Gen 2 acceptance | Same Gen 2 implementation commit: **TBD** | STEMlab 125-14 Pro Gen 2 Z7010, profile 21 or 32 with `z10_125_pro_v2`, OS 2.07+ | Pending device; required before claiming Pro support |
-| Unsupported-board refusal | Same Gen 2 implementation commit: **TBD** | Z7020 or TI-based Gen 2 board | Optional read-only safety test; never attempt an FPGA load |
+| Final-branch original-board regression | `80b6291199dfb7a7d784e4c0d355c5905735621f` | Original STEMlab 125-14 Z7010, one of the OS 2 images accepted above | Pending device |
+| Standard Gen 2 acceptance | `80b6291199dfb7a7d784e4c0d355c5905735621f` | STEMlab 125-14 Gen 2 Z7010, profile 20 or 31 with `z10_125_v2`, OS 2.07+ | Pending device |
+| Pro Gen 2 acceptance | `80b6291199dfb7a7d784e4c0d355c5905735621f` | STEMlab 125-14 Pro Gen 2 Z7010, profile 21 or 32 with `z10_125_pro_v2`, OS 2.07+ | Pending device; required before claiming Pro support |
+| Unsupported-board refusal | `80b6291199dfb7a7d784e4c0d355c5905735621f` | Z7020 or TI-based Gen 2 board | Optional read-only safety test; never attempt an FPGA load |
 
 `ddb1077` is the test checkout for the committed original-board OS 2 work. It
 contains the loader introduced by `10f0e68`, support for both known fixed
 firmware basenames added by `7aa600e`, and the read-only preflight added by
 `ddb1077`.
 
-Do not assign the Gen 2 gates to a working-tree snapshot. Commit the current
-implementation and offline evidence first, then replace every **TBD** above
-with that one immutable commit ID before attaching hardware.
+The Gen 2 gates belong to implementation commit
+`80b6291199dfb7a7d784e4c0d355c5905735621f`, not to a later working-tree
+snapshot. Use a separate worktree at that exact commit when attaching hardware.
 
 ## Required order
 
-1. Commit the Gen 2 repository implementation and record its ID here.
-2. Test `c535358` on the already-known original Z7010 and OS `1.04-18`. This
+1. Test `c535358` on the already-known original Z7010 and OS `1.04-18`. This
    isolates Python 3.14 from all OS 2 and Gen 2 changes.
-3. Test `ddb1077` on an original Z7010 with each available OS 2 overlay
+2. Test `ddb1077` on an original Z7010 with each available OS 2 overlay
    contract. Both contracts are required if both device images can be made
    available.
-4. Test the final Gen 2 commit on an original Z7010 running an already-passed
+3. Test `80b6291` on an original Z7010 running an already-passed
    OS 2 image. This catches regressions introduced by widening the profile
    table.
-5. Test that same final commit on a standard Z7010 Gen 2 board.
-6. Test it separately on a Pro Z7010 Gen 2 board before claiming the Pro
+4. Test `80b6291` on a standard Z7010 Gen 2 board.
+5. Test `80b6291` separately on a Pro Z7010 Gen 2 board before claiming the Pro
    profiles field-validated.
 
 A pass at a later gate does not retroactively replace an earlier isolation
