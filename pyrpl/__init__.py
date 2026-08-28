@@ -6,10 +6,11 @@ __license__ = "GNU General Public License 3 (GPLv3)"
 # manage warnings of numpy and scipy
 import warnings
 import numpy as np
+from numpy.exceptions import ComplexWarning, VisibleDeprecationWarning
 # pyqtgraph is throwing a warning on ScatterPlotItem
-warnings.simplefilter("ignore", np.VisibleDeprecationWarning)
+warnings.simplefilter("ignore", VisibleDeprecationWarning)
 # pyqtgraph is throwing a warning on ScatterPlotItem
-warnings.simplefilter("error", np.ComplexWarning)
+warnings.simplefilter("error", ComplexWarning)
 # former issue with IIR, now resolved
 #from scipy.signal import BadCoefficients
 #warnings.simplefilter("error", BadCoefficients)
@@ -21,12 +22,21 @@ logger = logging.getLogger(name=__name__)
 # only show errors or warnings until userdefine log level is set up
 logger.setLevel(logging.INFO)
 
-# enable ipython QtGui support if needed
+# Enable terminal IPython Qt support without replacing a running ipykernel
+# asyncio loop.
+import asyncio
+
+IPYTHON = None
+IPYTHON_ASYNC_LOOP = None
 try:
     from IPython import get_ipython
     IPYTHON = get_ipython()
-    IPYTHON.magic("gui qt")
-except BaseException as e:
+    if IPYTHON is not None:
+        try:
+            IPYTHON_ASYNC_LOOP = asyncio.get_running_loop()
+        except RuntimeError:
+            IPYTHON.run_line_magic("gui", "qt")
+except Exception as e:
     logger.debug('Could not enable IPython gui support: %s.' % e)
 
 # get QApplication instance
@@ -35,6 +45,22 @@ APP = QtWidgets.QApplication.instance()
 if APP is None:
     logger.debug('Creating new QApplication instance "pyrpl"')
     APP = QtWidgets.QApplication(['pyrpl'])
+
+
+async def _pump_qt_from_ipykernel():
+    """Keep Qt responsive without replacing ipykernel's asyncio loop."""
+    try:
+        while True:
+            APP.processEvents()
+            await asyncio.sleep(0.01)
+    except asyncio.CancelledError:
+        pass
+
+
+IPYTHON_QT_PUMP = None
+if IPYTHON_ASYNC_LOOP is not None:
+    IPYTHON_QT_PUMP = IPYTHON_ASYNC_LOOP.create_task(
+        _pump_qt_from_ipykernel(), name="pyrpl-qt-event-pump")
 
 # get user directories
 import os

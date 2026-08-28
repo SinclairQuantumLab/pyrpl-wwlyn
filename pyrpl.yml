@@ -1,9 +1,9 @@
-name: pyrpl-py39
+name: pyrpl-py314
 channels:
   - conda-forge
 dependencies:
-  - python=3.9
+  - python=3.14
   - ipykernel
   - pip
   - pip:
-      - .
+      - -e .[test]

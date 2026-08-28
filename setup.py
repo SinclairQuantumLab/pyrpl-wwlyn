@@ -7,12 +7,8 @@
 
 #! /usr/bin/env python
 from __future__ import print_function
-from setuptools import setup, find_packages
-from setuptools.command.test import test as TestCommand
-import io
-import codecs
+from setuptools import setup
 import os
-import sys
 
 # path to the directory that contains the setup.py script
 SETUP_PATH = os.path.dirname(os.path.abspath(__file__))
@@ -35,34 +31,35 @@ version = _locals['__version__']
 #         line = line.strip()
 #         if '#' not in line and line:
 #             requirements.append(line.strip())
-requirements = ['scp',
-                'matplotlib', # optional requirementm, not needed for core
-                'scipy>=1.9,<1.12',
-                'pyyaml',
+requirements = ['scp>=0.15,<1',
+                'matplotlib>=3.10.5,<4', # optional requirement, not needed for core
+                'scipy>=1.16.1,<2',
+                'pyyaml>=6,<7',
                 #'ruamel.yaml' # temporarily disabled
-                'pandas',
-                'pyqtgraph>=0.11',
-                'numpy>=1.23,<1.24',
-                'paramiko>=2.0,<4',
-                'nose>=1.0',
-                'pyqt5>=5.15',
-                'qtpy>=2',
-                'nbconvert',
-                'jupyter-client',
-                'netifaces2>=0.0.22',
-                'lmfit>=1.0.1,<1.3.3']
-if sys.version_info >= (3,4):  # python version dependencies
-    requirements += ['quamash']
-else:  # python 2.7
-    requirements += ['futures', 'mock']  # mock is now a full dependency
+                'pandas>=2.3.3,<4',
+                'pyqtgraph>=0.14,<1',
+                'numpy>=2.3.2,<3',
+                'paramiko>=4,<6',
+                'pyqt5>=5.15.11,<6',
+                'qtpy>=2.4.3,<3',
+                'nbconvert>=7.16,<8',
+                'jupyter-client>=8.6,<9',
+                # Drop-in fork that provides the netifaces import.
+                'netifaces2>=0.0.22,<1',
+                'lmfit>=1.3.4,<2',
+                # Maintained Qt/asyncio bridge replacing Quamash.
+                'qasync>=0.28,<0.29',
+                'six>=1.17,<2']
+test_requirements = ['ipykernel>=6.31,<8',
+                     'nose-ng>=1.4.3,<2']
 if os.environ.get('TRAVIS') == 'true':
     requirements += ['pandoc']
 if os.environ.get('READTHEDOCS') == 'True':
     requirements += ['pandoc', 'sphinx', 'sphinx_bootstrap_theme']  # mock is needed on readthedocs.io to mock PyQt5
     # remove a few of the mocked modules
     def rtd_included(r):
-        for rr in ['numpy', 'scipy', 'pandas', 'scp', 'paramiko', 'nose',
-                   'quamash', 'qtpy', 'asyncio', 'pyqtgraph']:
+        for rr in ['numpy', 'scipy', 'pandas', 'scp', 'paramiko',
+                   'qasync', 'qtpy', 'asyncio', 'pyqtgraph']:
             if r.startswith(rr):
                 return False
         return True
@@ -89,19 +86,6 @@ def find_packages():
         if "__init__.py" in filenames:
             modules.append(os.path.relpath(dirpath, SETUP_PATH))
     return [module.replace(os.sep, ".") for module in modules]
-
-
-class PyTest(TestCommand):
-    # user_options = [('pytest-args=', 'a', "192.168.1.100")] #not yet working
-    def finalize_options(self):
-        TestCommand.finalize_options(self)
-        self.test_args = []
-        self.test_suite = True
-
-    def run_tests(self):
-        import pytest
-        errcode = pytest.main(self.test_args)
-        sys.exit(errcode)
 
 
 def compile_fpga(): #vivado 2015.4 must be installed for this to work
@@ -131,7 +115,7 @@ setup(name='pyrpl',
       author_email='neuhaus@lkb.upmc.fr',
       url='http://lneuhaus.github.io/pyrpl/',
       license='GPLv3',
-      classifiers=['Programming Language :: Python :: 3.9',
+      classifiers=['Programming Language :: Python :: 3.14',
                    'Programming Language :: C',
                    'Natural Language :: English',
                    'Development Status :: 4 - Beta',
@@ -141,7 +125,7 @@ setup(name='pyrpl',
       keywords='RedPitaya DSP FPGA IIR PDH synchronous detection filter PID '
                'control lockbox servo feedback lock quantum optics',
       platforms='any',
-      python_requires='>=3.9,<3.10',
+      python_requires='>=3.14,<3.15',
       packages=find_packages(), #['pyrpl'],
       package_data={'pyrpl': ['fpga/*',
                               'pyrpl_server/*',
@@ -151,12 +135,8 @@ setup(name='pyrpl',
       # what were the others for? dont remember..
       #setup_requires=requirements,
       #requires=requirements,
-      # stuff for unitary test with pytest
-      tests_require=['nose>=1.0'],
-      # extras_require={'testing': ['pytest']},
-	  test_suite='nose.collector',
+      extras_require={'test': test_requirements},
       # install options
-      cmdclass={'test': PyTest,
-                'fpga': compile_fpga,
+      cmdclass={'fpga': compile_fpga,
                 'server': compile_server}
       )

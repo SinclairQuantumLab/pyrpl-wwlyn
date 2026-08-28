@@ -1,4 +1,4 @@
-"""
+r"""
 The scope works similar to the ASG but in reverse: Two channels are
 available. A table of :math:`2^{14}` datapoints for each channel is
 filled with the time series of incoming data. Downloading a full trace
@@ -542,7 +542,7 @@ class Scope(HardwareModule, AcquisitionModule):
         return np.array(
             np.roll(self._rawdata_ch1, - (self._write_pointer_trigger +
                                           self._trigger_delay_register + 1)),
-            dtype=np.float) / 2 ** 13
+            dtype=float) / 2 ** 13
 
     @property
     def _data_ch2(self):
@@ -550,21 +550,21 @@ class Scope(HardwareModule, AcquisitionModule):
         return np.array(
             np.roll(self._rawdata_ch2, - (self._write_pointer_trigger +
                                           self._trigger_delay_register + 1)),
-            dtype=np.float) / 2 ** 13
+            dtype=float) / 2 ** 13
 
     @property
     def _data_ch1_current(self):
         """ (unnormalized) data from ch1 while acquisition is still running"""
         return np.array(
             np.roll(self._rawdata_ch1, -(self._write_pointer_current + 1)),
-            dtype=np.float) / 2 ** 13
+            dtype=float) / 2 ** 13
 
     @property
     def _data_ch2_current(self):
         """ (unnormalized) data from ch2 while acquisition is still running"""
         return np.array(
             np.roll(self._rawdata_ch2, -(self._write_pointer_current + 1)),
-            dtype=np.float) / 2 ** 13
+            dtype=float) / 2 ** 13
 
     @property
     def times(self):

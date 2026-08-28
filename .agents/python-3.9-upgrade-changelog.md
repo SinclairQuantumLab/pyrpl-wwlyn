@@ -243,9 +243,18 @@ This validates only the author's matching original-generation Zynq-7010
 hardware and legacy OS environment. It does not establish compatibility with
 Gen 2, Z7020, 4-input, slave, or OS 2.x/3.x targets.
 
-## Not validated
+## Subsequent checkpoint clarification
 
-- `test.ipynb` was not executed, modified, or included.
+The following checkpoint commit, `407a9d1`, added `test.ipynb` to the branch.
+The user subsequently reported a successful field test with that Python 3.9
+checkpoint. The notebook itself remains a machine- and device-specific live
+test record; adding it did not make it a general offline regression test.
+
+## Not validated by this original upgrade commit
+
+- `test.ipynb` was not executed or modified while commit `d3a2405` was being
+  prepared. Its later inclusion and the separately reported field result are
+  recorded above.
 - No FPGA-manager or overlay behavior was exercised; those mechanisms belong
   to newer Red Pitaya OS releases and remain outside this upgrade.
 - The complete legacy test suite was not run because parts of it require or

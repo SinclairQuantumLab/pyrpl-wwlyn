@@ -2,13 +2,15 @@
 
 ## Scope
 
-- Commit `387faf3012c21925c9905d81a95cb681ac7d1b22` is the pristine
-  `wwlyn/pyrpl_change` baseline for this Python 3.9 upgrade.
-- `.agents/python-3.9-upgrade-changelog.md` is the authoritative record of
-  the upgrade's scope, dependency rationale, preservation boundary, and
-  completed offline validation.
-- Preserve the author's behavior. Limit changes to Python 3.9 dependency,
-  packaging, and directly demonstrated Python/Qt compatibility fixes.
+- Commit `407a9d1b8c70f74e6d59a67365d1eaa1d34a0553` is the field-tested
+  CPython 3.9 checkpoint from which the CPython 3.14 upgrade proceeds.
+- `.agents/python-3.9-upgrade-changelog.md` is the historical record of the
+  validated 3.9 baseline. Keep the 3.14 implementation and its validation
+  evidence in a separate, non-rewriting commit and in
+  `.agents/python-3.14-upgrade-changelog.md`.
+- Preserve the author's behavior. Limit changes to Python 3.14 dependency,
+  packaging, and directly demonstrated Python/NumPy/Qt/async compatibility
+  fixes.
 - Do not import implementation changes or FPGA assets from current official
   PyRPL merely because they are newer.
 
@@ -34,13 +36,36 @@
 
 ## Validation
 
-- Target CPython `3.9.*`; keep `.python-version`, `setup.py`, and `pyrpl.yml`
+- Target CPython `3.14.*`; keep `.python-version`, `setup.py`, and `pyrpl.yml`
   aligned.
+- `setup.py` remains the dependency and package-metadata source of truth;
+  `pyproject.toml` selects the setuptools build backend. This branch does not
+  use a generated dependency lockfile.
+- Preserve the tested major-version bounds in `setup.py`: NumPy
+  `>=2.3.2,<3`, SciPy `>=1.16.1,<2`, lmfit `>=1.3.4,<2`, Paramiko `>=4,<6`,
+  PyQt5 `>=5.15.11,<6`, and pyqtgraph `>=0.14,<1`.
+- Quamash is replaced by `qasync>=0.28,<0.29`. qasync 0.28 does not claim
+  upstream Python 3.14 support, so the script and real-ipykernel event-loop
+  regressions are mandatory before handoff.
+- Use the `nosetests` command supplied by `nose-ng>=1.4.3,<2`; the original
+  Nose package uses standard-library APIs removed by modern Python.
 - Use `QT_QPA_PLATFORM=offscreen`, a temporary `PYRPL_USER_DIR`, and
   `REDPITAYA_HOSTNAME=_FAKE_` for offline tests.
-- Use Nose for the legacy tests. The safe offline subset is
+- Use Nose NG for the legacy tests. The safe offline subset is
   `pyrpl.test.test_memory`, `pyrpl.test.test_proxyproperty`, and
-  `tests/test_python39_compatibility.py`; do not run the full
+  the root `tests/test_*compatibility.py` regressions; do not run the full
   hardware-oriented suite by default.
-- Before handoff, compile all Python files, install from a fresh Python 3.9
+- Create or replace the local environment with
+  `uv venv --clear --python 3.14 --seed .venv` and
+  install with `uv pip install --python .venv/Scripts/python.exe -e ".[test]"`.
+- Before handoff, compile all Python files, install from a fresh Python 3.14
   environment, inspect the wheel, and verify the fork bitstream hash.
+
+## Configuration and notebooks
+
+- `test.ipynb` is a tracked record of live-device experiments. It contains
+  machine- and device-specific state and hardware-mutating cells. Do not run
+  it, sanitize it, or rewrite its saved outputs unless the user explicitly
+  requests notebook/device work.
+- `tests/simple_connection_test.py` is local and ignored. Never commit its
+  device-specific configuration; keep the tracked template sanitized.

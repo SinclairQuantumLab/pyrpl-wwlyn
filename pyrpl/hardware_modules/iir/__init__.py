@@ -1,4 +1,4 @@
-"""
+r"""
 Sometimes it is interesting to realize even more complicated filters.
 This is the case, for example, when a piezo resonance limits the maximum
 gain of a feedback loop. For these situations, the IIR module can

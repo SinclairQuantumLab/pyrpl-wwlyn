@@ -20,32 +20,32 @@ The official PyRPL website address is [http://pyrpl.readthedocs.io/](http://pyrp
 
 ## Installation
 
-This fork targets CPython 3.9. From the repository root on Windows:
+This fork targets CPython 3.14. From the repository root on Windows:
 
 ```powershell
-python --version  # Verify that this reports Python 3.9.x.
-python -m venv .venv
-.\.venv\Scripts\python -m pip install --upgrade pip
-.\.venv\Scripts\python -m pip install -r requirements.txt
+uv venv --clear --python 3.14 --seed .venv
+uv pip install --python .venv\Scripts\python.exe -e ".[test]"
+.\.venv\Scripts\python.exe --version  # Must report Python 3.14.x.
 ```
 
-If this environment will be selected as a Jupyter kernel, also install
-`ipykernel` into it. The Conda environment below includes it already.
+The `test` extra includes the notebook kernel and the maintained Nose NG
+runner used by the selected legacy tests.
 
 Alternatively, create the supplied Conda environment:
 
 ```powershell
 conda env create -f pyrpl.yml
-conda activate pyrpl-py39
+conda activate pyrpl-py314
 ```
 
 Both methods install this checkout, including its fork-specific FPGA image.
-The declared dependency bounds avoid manual NumPy monkeypatches. Do not
+The declared dependency bounds support NumPy 2 without manual monkeypatches.
+Do not
 install the unrelated `pyrpl` package from PyPI over this checkout.
 
 ### Historical upstream installation
 
-The instructions below predate this fork's Python 3.9 environment and are
+The instructions below predate this fork's Python 3.14 environment and are
 retained as historical PyRPL documentation.
 
 The easiest and fastest way to get PyRPL is to download and execute the [precompiled executable for windows](https://sourceforge.net/projects/pyrpl/files/latest/download). This option requires no extra programs to be installed on the computer.
@@ -85,12 +85,22 @@ A GUI should open, let you configure the redpitaya device you would like to use,
 We collect a list of common problems on the [documenation website](http://pyrpl.readthedocs.io/en/latest/user_guide/installation/common_problems.html). If you do not find your problem listed there, please report all problems or wishes as new issues on [this page](https://github.com/lneuhaus/pyrpl/issues), so we can fix it and improve the future user experience.
 
 ## Unit test
-If you want to check whether PyRPL works correctly on your machine, navigate with a command line terminal into the pyrpl root directory and type the  following commands (by substituting the ip-address / hostname of your Red Pitaya, of course)
+
+Run the hardware-free compatibility suite from the repository root:
+
+```powershell
+$env:QT_QPA_PLATFORM = "offscreen"
+$env:REDPITAYA_HOSTNAME = "_FAKE_"
+$env:PYRPL_USER_DIR = Join-Path $env:TEMP ("pyrpl-test-" + [guid]::NewGuid())
+New-Item -ItemType Directory -Path $env:PYRPL_USER_DIR | Out-Null
+.\.venv\Scripts\python.exe -m unittest -v tests\test_python314_compatibility.py tests\test_ipykernel_compatibility.py
+.\.venv\Scripts\nosetests.exe -v pyrpl.test.test_memory pyrpl.test.test_proxyproperty tests\test_python39_compatibility.py tests\test_python314_compatibility.py
 ```
-set REDPITAYA_HOSTNAME=your_redpitaya_ip_address
-nosetests
-```
-All tests should take about 3 minutes and finish without failures or errors. If there are errors, please report the console output as an issue (see the section "Issues" below for detailed explanations).
+
+The complete legacy suite includes tests that discover, contact, and mutate a
+Red Pitaya, so it is not an ordinary offline test command. Live-device
+validation must be explicitly planned for the confirmed board, OS, and fork
+bitstream combination.
 
 ## Next steps / documentation
 The full html documentation is hosted at [http://pyrpl.readthedocs.io](http://pyrpl.readthedocs.io). Alternatively, you can download a .pdf version at [https://media.readthedocs.org/pdf/pyrpl/latest/pyrpl.pdf](https://media.readthedocs.org/pdf/pyrpl/latest/pyrpl.pdf). We are still in the process of creating an fully up-to-date version of the documentation of the current code. If the current documentation is wrong or insufficient, please post an [issue](https://github.com/lneuhaus/pyrpl/issues/new) and we will prioritize documenting the part of code you need.

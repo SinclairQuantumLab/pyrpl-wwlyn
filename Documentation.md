@@ -21,7 +21,7 @@
     - [External Trigger Configuration](#external-trigger-configuration)
     - [Labscript](#labscript)
       - [Blacs](#blacs)
-      - [Dependency compatibility in **Python 3.9**](#dependency-compatibility-in-python-39)
+      - [Dependency compatibility in **Python 3.14**](#dependency-compatibility-in-python-314)
       - [Run 2 blacs at the same time](#run-2-blacs-at-the-same-time)
   - [Useful Sources \& Thanks](#useful-sources--thanks)
 
@@ -65,7 +65,7 @@ Set a static IP to avoid random IP changes on MIT SECURE network:
 
 I use the branch `max_hold_no_iir_improvement` with lock/hold function:
 ```bash
-conda create --name my-env python=3.9
+conda create --name my-env python=3.14
 conda activate my-env
 git clone -b max_hold_no_iir_improvement https://github.com/pyrpl-fpga/pyrpl.git
 cd the_folder_name # Where setup.py exists
@@ -75,7 +75,7 @@ pip install pyqt5
 # Fix any import errors according to error messages when importing PyRPL
 ```
 **Note:** We can resolve package conflicts by downgrading numpy, pyqtgraph etc. as needed. Use virtual environment recommended. The fork now has a
-[declared Python 3.9-compatible environment.](#dependency-compatibility-in-python-39)
+[declared Python 3.14-compatible environment.](#dependency-compatibility-in-python-314)
 
 #### Install my modified PyRPL
 
@@ -84,7 +84,7 @@ pip install pyqt5
 If you only want to use PyRPL that I have modified, please follow this to download PyRPL package:
 
 ```bash
-conda create --name my-env python=3.9
+conda create --name my-env python=3.14
 conda activate my-env
 git clone -b max_hold_no_iir_improvement https://github.com/wwlyn/pyrpl_change.git
 cd the_folder_name # Where setup.py exists
@@ -92,7 +92,7 @@ cd the_folder_name # Where setup.py exists
 pip install .  # Use virtual environment recommended
 # Fix any import errors according to error messages when importing PyRPL
 ```
-The repository now declares Python 3.9-compatible dependency bounds, so no
+The repository now declares Python 3.14-compatible dependency bounds, so no
 NumPy compatibility monkeypatch is needed before importing PyRPL.
 
 #### (Resolved) Calibration issue
@@ -411,16 +411,17 @@ PyRPL installation causes package conflicts. Two approaches:
 
 | Method | Pros | Cons | Recommended For |
 |--------|------|------|-----------------|
-| [**Use the declared Python 3.9 environment**](#dependency-compatibility-in-python-39) | Compatible dependency bounds, preserves PyRPL behavior | Requires an isolated environment | Direct PyRPL and RunManager use |
+| [**Use the declared Python 3.14 environment**](#dependency-compatibility-in-python-314) | Compatible dependency bounds, preserves PyRPL behavior | Requires an isolated environment | Direct PyRPL and RunManager use |
 | **Run dual Blacs** | Use old-version packages in virtual env, reserves base environment | Cannot directly use RP to run sequence | Complex conflicts in packages that cannot be manually fixed |
 
 
-#### Dependency compatibility in **Python 3.9**
+#### Dependency compatibility in **Python 3.14**
 
-Install this checkout with `pip install -r requirements.txt` or create the
-environment from `pyrpl.yml`. The package metadata selects versions compatible
-with the legacy NumPy and SciPy APIs used by this fork. Do not add aliases to
-the NumPy module at runtime; that can conceal an incompatible environment.
+Install this checkout with `uv pip install --python .venv\\Scripts\\python.exe
+-e ".[test]"` or create the environment from `pyrpl.yml`. The Python 3.14
+compatibility code uses supported NumPy 2 APIs and an in-tree finite-difference
+calculation instead of the removed `scipy.misc.derivative`. Do not add aliases
+to the NumPy module at runtime; that can conceal an incompatible environment.
 
 The PyQtGraph and QtPy compatibility adjustments are included in this source
 tree and work with the declared dependency ranges.
