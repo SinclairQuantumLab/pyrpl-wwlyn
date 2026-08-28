@@ -69,3 +69,27 @@
   requests notebook/device work.
 - `tests/simple_connection_test.py` is local and ignored. Never commit its
   device-specific configuration; keep the tracked template sanitized.
+
+## Red Pitaya OS 2 and Gen 2 investigation
+
+- The evidence and proposed validation gates are recorded in
+  `.agents/red-pitaya-os2-gen2-upgrade-assessment.md`. Keep OS compatibility
+  and board compatibility as separate concerns: an original STEMlab 125-14
+  can run OS 2, while "Gen 2" includes materially different Z7010, Z7020, and
+  TI-based profiles.
+- The first implementation target, if authorized, is the original Z7010
+  STEMlab 125-14 on a pinned OS 2.07 image while preserving the exact fork
+  bitstream. This is primarily a loader/device-tree integration task, not a
+  reason to alter the fork's DSP RTL.
+- Do not copy the maintained/upstream PyRPL DTBO into this fork. It describes
+  an AXI XADC at `0x83c00000`, whereas this fork instantiates and controls XADC
+  in `pyrpl/fpga/rtl/red_pitaya_ams.v`. A fork DTBO must be derived from the
+  actual implemented design and validated as a pair with the fork bitstream.
+- `main` contains earlier modern-loader work and regression tests. Treat it as
+  a reference for selective review, not as authority to merge unrelated code
+  or FPGA artifacts into this branch.
+- A Z7010 Gen 2 board may be compatible with the existing bitstream after
+  exact model, pin, clock, and analog validation. A Z7020 Gen 2 target requires
+  a separately authorized FPGA rebuild/port. TI-based Gen 2 boards require a
+  different converter/platform design and are outside the preservation-first
+  path.
