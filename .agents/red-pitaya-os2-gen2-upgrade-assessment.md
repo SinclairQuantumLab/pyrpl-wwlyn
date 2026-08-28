@@ -31,7 +31,7 @@ model:
 | Target | Expected FPGA-side depth | Assessment |
 | --- | --- | --- |
 | Original STEMlab 125-14 (Z7010) on OS 2 | Device-tree/loader integration; no DSP RTL change expected | Practical next target |
-| STEMlab 125-14 or 125-14 PRO Gen 2 (Z7010) | Board-profile validation; potentially no bitstream rebuild | Plausible, but requires bench validation |
+| STEMlab 125-14 or 125-14 PRO Gen 2 (Z7010) | Exact board-profile integration; no bitstream rebuild | Repo-side support implemented; bench validation pending |
 | STEMlab 125-14 PRO Z7020 Gen 2 | Significant platform port and rebuild; preserve/adapt custom RTL | Bounded engineering project, not a complete rewrite |
 | TI-based Gen 2 variants | Converter/platform redesign and new drivers | Major specialist project; not a preservation-first upgrade |
 
@@ -112,17 +112,33 @@ known image is the lower-risk OS 2 strategy.
 ### Z7010 Gen 2
 
 The standard and PRO STEMlab 125-14 Gen 2 models retain a Zynq-7010 and the
-same basic two-channel 14-bit 125 MS/s converter class. The current official
-PyRPL project uses the same constraint content for its normal and Gen 2 Z7010
-builds. An external PyRPL report also found that copying the original Z7010
-PyRPL image/overlay for explicit loading on a Z7010 PRO Gen 2 board allowed
-quick ASG, scope, and spectrum-analyzer tests.
+same two-channel 14-bit 125 MS/s converter interface. The static compatibility
+case is stronger than the initial assessment suggested:
 
-That is strong evidence for reuse, not proof for this custom image. Before
-loading it, verify the exact model identifier, FPGA part, PS clock setup, pin
-constraints, analog calibration representation, and the scope of unsupported
-Gen 2-only connector/features. Then run the fork-specific PID and triggered
-setpoint tests, not only generic PyRPL smoke tests.
+- Red Pitaya ecosystem profiles identify standard Gen 2 as profile 20
+  (`z10_125_v2`) and Pro Gen 2 as profile 21 (`z10_125_pro_v2`), with BO
+  counterparts 31 and 32. All four report Z7010.
+- Red Pitaya's official ecosystem build matrix selects `FPGA_MODEL = Z10` for
+  the original `z10_125`, standard Gen 2 `z10_125_v2`, and Pro Gen 2
+  `z10_125_pro_v2` directories. `FPGA_VERSION` separates installed assets but
+  does not select another Z10 bitstream platform for the PyRPL project.
+- The official Z10 FPGA project uses one `red_pitaya.xdc` for these Z7010
+  builds. Red Pitaya's published Gen 2 documentation and development schematic
+  confirm the Z7010 part, 125 MHz converter class, ADC/DAC package pins, GPIO,
+  PWM, XADC, and serial-link package connections used by this fork.
+- In PyRPL issue 586, a user explicitly loaded the original Z7010 PyRPL BIN and
+  DTBO on a Gen 2 Pro path and reported quick ASG, oscilloscope, and spectrum-
+  analyzer checks working.
+
+The repository therefore recognizes only those exact profile ID/path pairs and
+reuses the hash-pinned fork BIN/DTBO. It still does not claim live validation.
+The most important analog difference is DAC scaling: Red Pitaya declares Gen 2
+full scale as +/-2 V into high impedance and documents +/-1 V into 50 ohms.
+PyRPL cannot detect the connected load, so the original register normalization
+is preserved and the preflight/update path emits an explicit warning. A field
+test must measure input/output scaling, then exercise the fork-specific PID and
+triggered setpoint behavior rather than relying only on generic PyRPL smoke
+tests.
 
 ### Z7020 Gen 2
 
@@ -157,7 +173,7 @@ qualification. That is outside the scope of a conservative port.
 | --- | --- | --- |
 | OS-aware loader, defensive checks, and offline tests | High | Review and one controlled board test |
 | Derive/audit a fork DTBO from source and generated design | High with the exact toolchain | FPGA engineer approves the implemented design and live result |
-| Z7010 Gen 2 static compatibility review and software integration | Moderate to high | Exact board and analog/function bench tests are mandatory |
+| Z7010 Gen 2 static compatibility review and software integration | High; repo-side portion is implemented | Exact board and analog/function bench tests are mandatory |
 | Z7020 platform port | Moderate as an AI-assisted engineering project | Vivado, exact hardware, recovery media, lab equipment, and experienced FPGA review |
 | TI variant port | Low for a general-purpose agent acting alone | Converter/FPGA specialist and substantial lab work |
 
@@ -193,10 +209,13 @@ upgrade.
    diagnostics, monitor-server connection, valid fork register/signature
    metadata, and functional ASG/scope/PID/setpoint tests. Stop retrying if SSH
    disappears and determine whether the board rebooted.
-4. **Z7010 Gen 2 validation.** Only after static model/pin/clock proof, test the
-   unchanged image and matching overlay on the exact Gen 2 profile. Include
-   calibration and analog tests and state which Gen 2-specific features the
-   PyRPL image does not expose.
+4. **Z7010 Gen 2 repo integration (implemented offline).** The exact standard,
+   Pro, and BO profile/path pairs are recognized while Z7020 remains rejected.
+   The unchanged image and matching overlay are used, and the load-dependent
+   DAC full-scale caveat is surfaced without changing register normalization.
+   Controlled field validation remains pending: include measured analog scale,
+   calibration, and fork-specific PID/trigger tests, and state which Gen 2
+   features the PyRPL image does not expose.
 5. **Optional Z7020 project.** Create a separate FPGA-port branch, pin a modern
    RedPitaya-FPGA and Vivado version, adapt the nine changed RTL areas to the
    Z7020 Gen 2 shell, generate a matched BIN/DTBO pair, close timing, and run
@@ -214,14 +233,20 @@ upgrade.
   <https://redpitaya.readthedocs.io/en/latest/developerGuide/fpga/advanced/device_tree.html>
 - Gen 2 hardware identification and Z7010 model:
   <https://redpitaya.readthedocs.io/en/latest/developerGuide/hardware/GEN2/125-14_Gen2/top.html>
+- Gen 2 published development schematic:
+  <https://downloads.redpitaya.com/doc/Schematics/Schematics_STEM_125-14_Gen2_V2r0_RevA.pdf>
 - Supported applications/model notes:
   <https://redpitaya.readthedocs.io/en/latest/appsFeatures/supportedFeaturesAndApps.html>
 - Current Red Pitaya FPGA source:
   <https://github.com/RedPitaya/RedPitaya-FPGA>
+- Red Pitaya ecosystem build matrix and hardware profiles:
+  <https://github.com/RedPitaya/RedPitaya/blob/master/Makefile.x86>
+  and
+  <https://github.com/RedPitaya/RedPitaya/blob/master/rp-api/api-hw-profiles/src/common.cpp>
 - Gen 2 PyRPL field report and maintainer discussion:
   <https://github.com/pyrpl-fpga/pyrpl/issues/586>
 
-Repository comparisons were pinned during this investigation to maintained
-PyRPL commit `4d87d093d78dd3275f43974f8a150a80f4a2adeb`, RedPitaya-FPGA
-Release-2026.1 commit `09b44cecfc0faae36c8fa0c4f404251424b9af6d`, and Red Pitaya
-ecosystem Release-2025.2 commit `54561fd`.
+The Gen 2 recheck on 2026-08-28 pinned maintained PyRPL commit
+`4d87d093d78dd3275f43974f8a150a80f4a2adeb`, RedPitaya-FPGA commit
+`728a4f37e9c0a9b5ba1d9b7a0d44c38bbd2dc674`, and Red Pitaya ecosystem commit
+`0e46d64396a57752bf97315789d6cc6c9fbddad8`.

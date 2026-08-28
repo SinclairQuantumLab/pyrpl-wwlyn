@@ -27,8 +27,19 @@ The overlay enables the implemented fabric clocks and AXI interfaces. It does
 not contain the AXI XADC node found in maintained PyRPL: this fork instantiates
 the Zynq `XADC` primitive directly in `rtl/red_pitaya_ams.v` and exposes it
 through the PyRPL register map. Each BIN/DTBO pair is restricted in software to
-original Z7010 ecosystem profiles 1 and 2 (`z10_125`). It is not approved for
-Gen 2, Z7020, early OS 2, or OS 3.
+exact Z7010 ecosystem profile/path pairs: original profiles 1 and 2
+(`z10_125`), standard Gen 2 profiles 20 and 31 (`z10_125_v2`), and Pro Gen 2
+profiles 21 and 32 (`z10_125_pro_v2`). It is not approved for Z7020, another
+converter family, early OS 2, or OS 3.
+
+No FPGA artifact was changed for Gen 2 support. Red Pitaya's own ecosystem
+build matrix selects the same `MODEL=Z10` FPGA build for all three Z7010 path
+families, and its published Gen 2 development schematic preserves the FPGA
+package pins used by this image. The remaining field-validation boundary is
+electrical and functional, especially the Gen 2 DAC stage: full scale is
++/-2 V into high impedance or +/-1 V into 50 ohms. Software must not silently
+rescale the fork's register contract based on board generation because it
+cannot detect the attached load.
 
 # Directory structure
 

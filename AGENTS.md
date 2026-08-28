@@ -10,7 +10,8 @@
   `.agents/python-3.14-upgrade-changelog.md`.
 - Preserve the author's behavior. The Python 3.14 upgrade is complete; the
   `develop/red-pitaya-upgrade` branch separately adds Red Pitaya OS 2.07+
-  loader/device-tree integration for the author's original Z7010 board.
+  loader/device-tree integration for the author's original Z7010 board and
+  repo-side support for the exact Z7010 Gen 2 profile families.
 - Do not import implementation changes or FPGA assets from current official
   PyRPL merely because they are newer.
 
@@ -19,9 +20,9 @@
 - The fork author's known hardware environment was Red Pitaya OS `1.04-18`
   on an original-generation STEMlab 125-14 with a Zynq-7010. Treat that as
   provenance for the legacy `/dev/xdevcfg` loader, not as permission to
-  downgrade or program a board. Before any live load, positively exclude
-  Gen 2, Z7020, 4-input, and slave variants and require `/dev/xdevcfg` to be
-  a character device.
+  downgrade or program a board. The legacy loader remains original-board only;
+  before any legacy live load, positively exclude Gen 2, Z7020, 4-input, and
+  slave variants and require `/dev/xdevcfg` to be a character device.
 - On the confirmed `1.04-18` image, `/root/.version` reports the underlying
   Linux image as `1.07`. Validate the ecosystem release with
   `/opt/redpitaya/version.txt`, which reports version `1.04`, build `18`.
@@ -89,14 +90,20 @@
 
 - The assessment and implementation state are recorded in
   `.agents/red-pitaya-os2-gen2-upgrade-assessment.md` and
-  `.agents/red-pitaya-os2-upgrade-changelog.md`. Keep OS compatibility and
-  board compatibility as separate concerns: an original STEMlab 125-14 can
-  run OS 2, while "Gen 2" includes materially different Z7010, Z7020, and
-  TI-based profiles.
-- The authorized implementation target is the original Z7010 STEMlab 125-14
-  (ecosystem profile 1 or 2, FPGA path `z10_125`) on OS 2.07 or newer within
-  major version 2. Preserve the exact fork bitstream. Refuse early OS 2, OS 3,
-  Gen 2, and Z7020 before uploading or changing device state.
+  `.agents/red-pitaya-os2-upgrade-changelog.md`; the Z7010 Gen 2 implementation
+  and remaining bench gate are in
+  `.agents/red-pitaya-gen2-upgrade-changelog.md`. The ordered device matrix,
+  candidate commits, stop conditions, and evidence-commit policy are in
+  `.agents/red-pitaya-live-test-plan.md`. Keep OS compatibility and board
+  compatibility as separate concerns: an original STEMlab 125-14 can run OS
+  2, while "Gen 2" includes materially different Z7010, Z7020, and TI-based
+  profiles.
+- The OS 2.07+ loader accepts only exact STEMlab 125-14 Z7010 profile/path
+  pairs: original profiles 1 and 2 with `z10_125`, standard Gen 2 profiles 20
+  and 31 with `z10_125_v2`, and Pro Gen 2 profiles 21 and 32 with
+  `z10_125_pro_v2`. Preserve the exact fork bitstream. Refuse mismatched
+  profile/path pairs, early OS 2, OS 3, Z7020, and other converter families
+  before uploading or changing device state.
 - OS 2.07+ loading must inspect the installed `overlay.sh` and recognize only
   its known fixed custom basenames, `/opt/pyrpl/fpga.bit.bin` or
   `/opt/pyrpl/fpga.bin`. It must select the hash-pinned DTBO whose
@@ -113,11 +120,15 @@
 - `main` contains earlier modern-loader work and regression tests. Treat it as
   a reference for selective review, not as authority to merge unrelated code
   or FPGA artifacts into this branch.
-- Offline tests do not establish hardware compatibility. No OS 2 live-device
-  claim may be made until a controlled test is explicitly authorized and the
-  implementation log's field gates pass.
-- A Z7010 Gen 2 board may be compatible with the existing bitstream after
-  exact model, pin, clock, and analog validation. A Z7020 Gen 2 target requires
+- Offline tests do not establish hardware compatibility. No OS 2 or Gen 2
+  live-device claim may be made until a controlled test is explicitly
+  authorized and the implementation log's field gates pass.
+- Static Z7010 Gen 2 support is based on Red Pitaya's official build matrix,
+  which uses the same `MODEL=Z10` platform for original, standard Gen 2, and
+  Pro Gen 2 paths, plus the published package-pin evidence. The FPGA image and
+  DTBO remain unchanged. Gen 2 DAC full scale is +/-2 V into high impedance
+  and +/-1 V into 50 ohms; do not silently alter PyRPL's register normalization
+  because software cannot infer the load. A Z7020 Gen 2 target still requires
   a separately authorized FPGA rebuild/port. TI-based Gen 2 boards require a
-  different converter/platform design and are outside the preservation-first
-  path.
+  different converter/platform design and remain outside the preservation-
+  first path.

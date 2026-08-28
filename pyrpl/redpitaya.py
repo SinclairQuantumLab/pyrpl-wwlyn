@@ -52,6 +52,54 @@ OS2_Z10_DTBO_SHA256 = {
         '99f0fd0c3ce394fb0c86e4dec95895b8a5855cc80ebbfd5fedc961fb9ed4a35c',
 }
 
+# Red Pitaya's ecosystem builds all of these profiles with the same Z10 FPGA
+# platform. Keep the profile ID and FPGA-directory name paired so that a
+# corrupted or surprising profile response is rejected before any upload.
+OS2_Z10_HARDWARE_PROFILES = {
+    1: {
+        'fpga': 'z10_125',
+        'model': 'STEMlab 125-14 v1.0',
+        'generation': 'original',
+        'variant': 'standard',
+        'dac_full_scale_high_z_volts': 1.0,
+    },
+    2: {
+        'fpga': 'z10_125',
+        'model': 'STEMlab 125-14 v1.1',
+        'generation': 'original',
+        'variant': 'standard',
+        'dac_full_scale_high_z_volts': 1.0,
+    },
+    20: {
+        'fpga': 'z10_125_v2',
+        'model': 'STEMlab 125-14 Gen 2',
+        'generation': 'gen2',
+        'variant': 'standard',
+        'dac_full_scale_high_z_volts': 2.0,
+    },
+    21: {
+        'fpga': 'z10_125_pro_v2',
+        'model': 'STEMlab 125-14 Pro Gen 2',
+        'generation': 'gen2',
+        'variant': 'pro',
+        'dac_full_scale_high_z_volts': 2.0,
+    },
+    31: {
+        'fpga': 'z10_125_v2',
+        'model': 'STEMlab 125-14 Gen 2 BO',
+        'generation': 'gen2',
+        'variant': 'standard-bo',
+        'dac_full_scale_high_z_volts': 2.0,
+    },
+    32: {
+        'fpga': 'z10_125_pro_v2',
+        'model': 'STEMlab 125-14 Pro Gen 2 BO',
+        'generation': 'gen2',
+        'variant': 'pro-bo',
+        'dac_full_scale_high_z_volts': 2.0,
+    },
+}
+
 # input is the wrong function in python 2
 try:
     raw_input
@@ -497,23 +545,39 @@ class RedPitaya(object):
         return profile
 
     def _validate_os2_z10_profile(self):
-        """Require the original-generation STEMlab 125-14 profile."""
+        """Require an exact supported STEMlab 125-14 Z7010 profile."""
         profile = self._read_os2_hardware_profile()
         try:
             profile_id = int(profile['id'])
         except (TypeError, ValueError):
             profile_id = None
-        valid = (profile['complete'] and profile_id in (1, 2) and
-                 profile['fpga'] == 'z10_125' and
+        expected = OS2_Z10_HARDWARE_PROFILES.get(profile_id)
+        valid = (profile['complete'] and expected is not None and
+                 profile['fpga'] == expected['fpga'] and
                  profile['zynq'] == 'Z7010')
         if not valid:
             raise ExpectedPyrplError(
                 'Refusing to program the FPGA because the Red Pitaya profile '
-                'is not an original-generation STEMlab 125-14 Z7010 '
-                '(expected profile id 1 or 2, fpga path z10_125, and Z7010; '
-                'detected id=%r, fpga=%r, zynq=%r). This branch does not yet '
-                'authorize Gen 2 or Z7020 loading.' %
+                'is not an exact supported STEMlab 125-14 Z7010 profile '
+                '(supported id/fpga pairs: 1 or 2/z10_125, '
+                '20 or 31/z10_125_v2, and '
+                '21 or 32/z10_125_pro_v2; detected id=%r, fpga=%r, '
+                'zynq=%r). Z7020 and other converter families require a '
+                'separate FPGA image and remain unsupported.' %
                 (profile['id'], profile['fpga'], profile['zynq']))
+        profile.update(expected)
+        profile['field_validation'] = (
+            'pending' if expected['generation'] == 'gen2'
+            else 'established-on-legacy-os')
+        if expected['generation'] == 'gen2':
+            self.logger.warning(
+                'Using the preserved Z7010 fork image with %s. Official '
+                'Red Pitaya builds use the same Z10 FPGA platform for this '
+                'profile, but this fork still needs controlled Gen 2 field '
+                'validation. Gen 2 DAC full scale is +/-2 V into high '
+                'impedance and +/-1 V into 50 ohms; PyRPL keeps its original '
+                'register normalization and does not infer the attached '
+                'load.', expected['model'])
         return profile
 
     def _local_fpga_file(self, filename, description, package_relative=False):
@@ -667,7 +731,13 @@ class RedPitaya(object):
             'fpga_filename': self.os2_fpga_filename,
             'hardware_profile': (
                 {'id': profile['id'], 'fpga': profile['fpga'],
-                 'zynq': profile['zynq']} if profile is not None else None),
+                 'zynq': profile['zynq'], 'model': profile['model'],
+                 'generation': profile['generation'],
+                 'variant': profile['variant'],
+                 'dac_full_scale_high_z_volts':
+                     profile['dac_full_scale_high_z_volts'],
+                 'field_validation': profile['field_validation']}
+                if profile is not None else None),
             'local_bitstream': prepared['source'],
             'local_bitstream_sha256': self._file_sha256(
                 prepared['source']),

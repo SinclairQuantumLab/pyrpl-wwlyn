@@ -325,7 +325,11 @@ class TestRedPitayaFpgaLoader(unittest.TestCase):
                 self.assertEqual('overlay', report['loader'])
                 self.assertEqual(fpga_filename, report['fpga_filename'])
                 self.assertEqual(
-                    {'id': '1', 'fpga': 'z10_125', 'zynq': 'Z7010'},
+                    {'id': '1', 'fpga': 'z10_125', 'zynq': 'Z7010',
+                     'model': 'STEMlab 125-14 v1.0',
+                     'generation': 'original', 'variant': 'standard',
+                     'dac_full_scale_high_z_volts': 1.0,
+                     'field_validation': 'established-on-legacy-os'},
                     report['hardware_profile'])
                 self.assertEqual(dtbo_basename,
                                  Path(report['local_dtbo']).name)
@@ -415,12 +419,55 @@ class TestRedPitayaFpgaLoader(unittest.TestCase):
         self.assertEqual([], device.ssh.scp.uploads)
         self.assertNotIn('rw', device.ssh.commands)
 
-    def test_os207_refuses_gen2_before_device_mutation(self):
+    def test_os207_accepts_exact_z7010_gen2_profiles(self):
+        profiles = (
+            ('20', 'z10_125_v2', 'standard'),
+            ('21', 'z10_125_pro_v2', 'pro'),
+            ('31', 'z10_125_v2', 'standard-bo'),
+            ('32', 'z10_125_pro_v2', 'pro-bo'),
+        )
+        for profile_id, profile_fpga, variant in profiles:
+            with self.subTest(profile_id=profile_id):
+                device = make_device(profile_id=profile_id,
+                                     profile_fpga=profile_fpga)
+                device.detect_platform()
+                with self.assertLogs(level='WARNING') as captured:
+                    device.update_fpga()
+                self.assertEqual('gen2',
+                                 device.hardware_profile['generation'])
+                self.assertEqual(variant,
+                                 device.hardware_profile['variant'])
+                self.assertEqual(2.0, device.hardware_profile[
+                    'dac_full_scale_high_z_volts'])
+                self.assertEqual('pending',
+                                 device.hardware_profile[
+                                     'field_validation'])
+                self.assertIn('controlled Gen 2 field validation',
+                              '\n'.join(captured.output))
+                self.assertEqual(2, len(device.ssh.scp.uploads))
+
+    def test_os207_gen2_preflight_reports_caveat_without_mutation(self):
         device = make_device(profile_id='20', profile_fpga='z10_125_v2')
+        with self.assertLogs(level='WARNING'):
+            report = device.preflight_fpga_update()
+        self.assertEqual('STEMlab 125-14 Gen 2',
+                         report['hardware_profile']['model'])
+        self.assertEqual('pending',
+                         report['hardware_profile']['field_validation'])
+        self.assertEqual(2.0, report['hardware_profile'][
+            'dac_full_scale_high_z_volts'])
+        self.assertEqual([], device.ssh.scp.uploads)
+        self.assertNotIn('rw', device.ssh.commands)
+        self.assertNotIn('__PYRPL_END__', device.ssh.commands)
+
+    def test_os207_rejects_mismatched_z7010_profile_before_mutation(self):
+        device = make_device(profile_id='20',
+                             profile_fpga='z10_125_pro_v2')
         device.detect_platform()
         with self.assertRaises(ExpectedPyrplError) as raised:
             device.update_fpga()
-        self.assertIn('does not yet authorize Gen 2', str(raised.exception))
+        self.assertIn('exact supported STEMlab 125-14 Z7010 profile',
+                      str(raised.exception))
         self.assertEqual([], device.ssh.scp.uploads)
         self.assertNotIn('rw', device.ssh.commands)
         self.assertNotIn('__PYRPL_END__', device.ssh.commands)

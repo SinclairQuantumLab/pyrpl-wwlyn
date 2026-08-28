@@ -79,21 +79,32 @@ python setup.py develop
 ### Red Pitaya compatibility
 
 This branch preserves the author's exact FPGA image for an
-original-generation STEMlab 125-14 with Zynq-7010. The loader supports:
+STEMlab 125-14 with Zynq-7010. The loader supports:
 
 - the author's Red Pitaya OS 1.04-18 environment through `/dev/xdevcfg`, after
   verifying that it is a character device; and
-- Red Pitaya OS 2.07+ on ecosystem profile 1 or 2 (`z10_125`, Z7010), through
-  FPGA Manager and a packaged, fork-specific overlay.
+- Red Pitaya OS 2.07+ through FPGA Manager and a packaged, fork-specific
+  overlay on these exact Z7010 profile/path pairs:
+  - original profiles 1 and 2: `z10_125`;
+  - standard Gen 2 profiles 20 and 31: `z10_125_v2`; and
+  - Pro Gen 2 profiles 21 and 32: `z10_125_pro_v2`.
 
 The loader reads the installed `overlay.sh` and supports both known OS 2 custom
 firmware basenames, `fpga.bit.bin` and `fpga.bin`, with a matching hash-pinned
-DTBO for each. An unknown loader contract, early OS 2, OS 3, Gen 2, or Z7020 is
-refused before FPGA files are uploaded. OS 2.07+ support has passed
-hardware-free regression tests but still requires controlled field validation
-before it should be considered proven.
+DTBO for each. Profile IDs and paths must match exactly. An unknown loader
+contract, early OS 2, OS 3, Z7020, or another converter family is refused
+before FPGA files are uploaded. OS 2.07+ support has passed hardware-free
+regression tests; controlled field validation is still pending for OS 2 and
+the Gen 2 profiles.
 The built-in FPGA filenames resolve from the installed package, so launching
 PyRPL from another working directory does not substitute another image.
+
+Red Pitaya's official build matrix uses the same `MODEL=Z10` FPGA platform for
+the original, standard Gen 2, and Pro Gen 2 profiles. This is why the preserved
+fork image can be reused without an FPGA rebuild. The analog output stage is
+not identical: Gen 2 full scale is +/-2 V into a high-impedance load and +/-1 V
+into 50 ohms. PyRPL retains the original register normalization because it
+cannot infer the connected load; verify output voltage before closing a loop.
 
 After booting the intended OS 2 image, the packaged preflight command can
 collect the release, overlay contract, board profile, current FPGA Manager
@@ -106,8 +117,9 @@ python -m pyrpl.redpitaya_preflight rp-xxxxxx.local
 It opens an SSH connection and prompts for the password, but sets
 `reloadfpga=False`, `reloadserver=False`, and `autostart=False`. It refuses an
 unsupported loader, mismatched board profile, unapproved asset, or incomplete
-SSH result. Run it only when live read-only access to the named board is
-intended.
+SSH result. Its JSON report identifies the exact board variant and marks Gen 2
+field validation as pending. Run it only when live read-only access to the
+named board is intended.
 
 First, hook up your Red Pitaya / STEMlab to a LAN accessible from your computer (follow the instructions for this on redpitya.com and make sure you can access your Red Pitaya with a web browser by typing its ip-address /  hostname into the address bar).
 In a command line terminal, type
