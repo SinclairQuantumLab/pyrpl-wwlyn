@@ -1,6 +1,6 @@
 # Red Pitaya OS 2 and Gen 2 upgrade assessment
 
-Assessment branch: `develop/red-pitaya-os2-gen2`
+Assessment branch: `develop/red-pitaya-upgrade`
 
 Baseline: `c535358` (`Upgrade the fork to Python 3.14`)
 
