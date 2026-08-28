@@ -4,8 +4,11 @@ Assessment branch: `develop/red-pitaya-upgrade`
 
 Baseline: `c535358` (`Upgrade the fork to Python 3.14`)
 
-This is an offline investigation. It did not contact a Red Pitaya, execute the
-live notebook, change the packaged bitstream, create a DTBO, or run Vivado.
+This document records the pre-implementation offline investigation. It did not
+contact a Red Pitaya, execute the live notebook, change the packaged bitstream,
+create a DTBO, or run Vivado. The subsequently authorized OS 2 implementation
+and its still-pending live gates are recorded separately in
+`.agents/red-pitaya-os2-upgrade-changelog.md`.
 
 ## Outcome
 
@@ -168,19 +171,22 @@ upgrade.
 
 ## Recommended sequence and acceptance gates
 
-1. **Original Z7010 on a pinned OS 2.07 image.** Preserve the exact fork BIN.
+1. **Original Z7010 on a pinned OS 2.07 image (implemented offline).**
+   Preserve the exact fork BIN.
    Add capability-based OS detection, the fixed OS 2 staging filename
    `/opt/pyrpl/fpga.bit.bin`, overlay invocation, status/diagnostic capture,
    server checks, and offline regression tests. Do not rely only on
    `/root/.version`; this fork's known legacy image reports inconsistent
    version numbers, so also inspect `/opt/redpitaya/version.txt` and loader
    capabilities.
-2. **Produce and audit the fork DTBO.** Resolve the XADC Tcl inconsistency in a
-   reproducible Vivado project, decompile the result for review, and prove its
-   clocks, fabric interfaces, addresses, interrupts, and firmware filename
-   correspond to the fork image. Adding it to the package is a separately
-   reviewable hardware-artifact change.
-3. **Controlled OS 2 field validation.** Confirm model/profile before upload;
+2. **Produce and audit the fork DTBO (source-level implementation complete).**
+   The source-derived overlay preserves the implemented clocks and fabric
+   interfaces and omits the unimplemented AXI XADC. It is decompilable and
+   hash-pinned. Because the historical BIN is not reproducibly rebuildable,
+   it was not replaced by a new Vivado output; hardware validation remains the
+   final proof for the preserved BIN/overlay pair.
+3. **Controlled OS 2 field validation (pending).** Confirm model/profile before
+   upload;
    keep recovery media available. Require overlay success, FPGA Manager state
    `operating`, useful `/tmp/update_fpga.txt` and `/tmp/loaded_fpga.inf`
    diagnostics, monitor-server connection, valid fork register/signature

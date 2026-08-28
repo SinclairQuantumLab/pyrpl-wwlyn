@@ -1,0 +1,377 @@
+"""Offline regression tests for Red Pitaya FPGA loading compatibility."""
+
+import hashlib
+import logging
+import os
+from pathlib import Path
+import tempfile
+import unittest
+
+import pyrpl.redpitaya as redpitaya_module
+from pyrpl.attributes import FilterRegister
+from pyrpl.errors import ExpectedPyrplError
+from pyrpl.redpitaya import RedPitaya, defaultparameters
+
+
+class FakeScp(object):
+    def __init__(self):
+        self.uploads = []
+
+    def put(self, source, destination):
+        self.uploads.append((source, destination))
+
+
+class FakeSsh(object):
+    def __init__(self, ecosystem_text='Red Pitaya OS 2.07-48',
+                 root_text='Ubuntu image 1.07', overlay_available=True,
+                 xdevcfg_available=False, profile_id='1',
+                 profile_fpga='z10_125', profile_zynq='Z7010',
+                 overlay_succeeds=True, manager_state='operating',
+                 loaded_info='pyrpl_/opt/pyrpl/fpga.bit.bin_'
+                             '/opt/pyrpl/fpga.dtbo',
+                 legacy_load_succeeds=True):
+        self.ecosystem_text = ecosystem_text
+        self.root_text = root_text
+        self.overlay_available = overlay_available
+        self.xdevcfg_available = xdevcfg_available
+        self.profile_id = profile_id
+        self.profile_fpga = profile_fpga
+        self.profile_zynq = profile_zynq
+        self.overlay_succeeds = overlay_succeeds
+        self.manager_state = manager_state
+        self.loaded_info = loaded_info
+        self.legacy_load_succeeds = legacy_load_succeeds
+        self.commands = []
+        self.pending_output = ''
+        self.scp = FakeScp()
+        self.hostname = 'redpitaya.test'
+
+    def ask(self, command=''):
+        self.commands.append(command)
+        if command == '' and self.pending_output:
+            output = self.pending_output
+            self.pending_output = ''
+            return output
+        if command == 'cat /opt/redpitaya/version.txt 2>/dev/null':
+            return self.ecosystem_text
+        if command == 'cat /root/.version 2>/dev/null':
+            return self.root_text
+        if 'PYRPL_OVERLAY_AVAILABLE' in command and 'PYRPL_XDEVCFG_AVAILABLE' in command:
+            overlay = ('PYRPL_OVERLAY_AVAILABLE' if self.overlay_available
+                       else 'PYRPL_OVERLAY_MISSING')
+            xdevcfg = ('PYRPL_XDEVCFG_AVAILABLE' if self.xdevcfg_available
+                       else 'PYRPL_XDEVCFG_MISSING')
+            return (command + '\n' + overlay + '\n' + xdevcfg +
+                    '\nPYRPL_CAPABILITIES_END')
+        if 'PYRPL_PROFILE_ID:' in command:
+            return (command + '\nPYRPL_PROFILE_ID:' + self.profile_id +
+                    '\nPYRPL_PROFILE_FPGA:' + self.profile_fpga +
+                    '\nPYRPL_PROFILE_ZYNQ:' + self.profile_zynq +
+                    '\nPYRPL_PROFILE_END')
+        if 'PYRPL_OVERLAY_' in command:
+            marker = ('PYRPL_OVERLAY_OK' if self.overlay_succeeds else
+                      'PYRPL_OVERLAY_FAILED')
+            return command + '\n' + marker
+        if command == 'cat /tmp/update_fpga.txt 2>&1':
+            return ('overlay loaded' if self.overlay_succeeds else
+                    'FPGA loading failed')
+        if command == 'cat /tmp/loaded_fpga.inf 2>&1':
+            return self.loaded_info
+        if command == 'cat /sys/class/fpga_manager/fpga0/state 2>&1':
+            return self.manager_state
+        if 'PYRPL_XDEVCFG_LOAD_' in command:
+            marker = ('PYRPL_XDEVCFG_LOAD_OK'
+                      if self.legacy_load_succeeds else
+                      'PYRPL_XDEVCFG_LOAD_FAILED')
+            return command + '\n' + marker
+        if 'PYRPL_XDEVCFG_' in command:
+            marker = ('PYRPL_XDEVCFG_OK' if self.xdevcfg_available else
+                      'PYRPL_XDEVCFG_MISSING')
+            return command + '\n' + marker
+        return ''
+
+
+class ZeroMetadataClient(object):
+    def __init__(self):
+        self.read_requests = []
+
+    def reads(self, address, length):
+        self.read_requests.append((address, length))
+        return [0] * length
+
+
+class ZeroRegisterModule(object):
+    name = 'iq1'
+
+    def _read(self, _address):
+        return 0
+
+
+def make_device(**ssh_kwargs):
+    """Construct a RedPitaya without opening a network connection."""
+    device = RedPitaya.__new__(RedPitaya)
+    device.logger = logging.getLogger(__name__)
+    device.parameters = defaultparameters.copy()
+    device.parameters['delay'] = 0
+    device.c = {}
+    device.ssh = FakeSsh(**ssh_kwargs)
+    device.client = None
+    device.end = lambda: device.ssh.commands.append('__PYRPL_END__')
+    device.start_ssh = lambda: None
+    return device
+
+
+class TestRedPitayaFpgaLoader(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        cls._original_sleep = redpitaya_module.sleep
+        redpitaya_module.sleep = lambda _seconds: None
+
+    @classmethod
+    def tearDownClass(cls):
+        redpitaya_module.sleep = cls._original_sleep
+
+    def test_packaged_fpga_assets_are_the_fork_pair(self):
+        fpga_directory = Path(redpitaya_module.__file__).parent / 'fpga'
+        bitstream = fpga_directory / 'red_pitaya.bin'
+        dtbo = fpga_directory / 'red_pitaya_os2_z10.dtbo'
+        dts = fpga_directory / 'red_pitaya_os2_z10.dts'
+        self.assertEqual(
+            'dc6e71fb04d3a5a67731a5ddb99e7f80395a1c2fee2b8ae59168ce4252cee9ed',
+            hashlib.sha256(bitstream.read_bytes()).hexdigest())
+        self.assertEqual(
+            '41a1c828bc5a7bbe99542353dfd2fbe181927e79b0e7515b86e1abbc006577f9',
+            hashlib.sha256(dtbo.read_bytes()).hexdigest())
+        self.assertTrue(dts.is_file())
+        self.assertEqual('fpga/red_pitaya.bin', defaultparameters['filename'])
+        self.assertEqual('fpga/red_pitaya_os2_z10.dtbo',
+                         defaultparameters['dtbo_filename'])
+
+    def test_dtbo_matches_direct_xadc_fork_design(self):
+        fpga_directory = Path(redpitaya_module.__file__).parent / 'fpga'
+        data = (fpga_directory / 'red_pitaya_os2_z10.dtbo').read_bytes()
+        source = (fpga_directory / 'red_pitaya_os2_z10.dts').read_text()
+        for value in (b'fpga.bit.bin\x00', b'clocking0\x00',
+                      b'clocking1\x00', b'clocking2\x00',
+                      b'clocking3\x00', b'afi0@f8008000\x00',
+                      b'afi1@f8009000\x00', b'__fixups__\x00',
+                      b'fpga_full\x00', b'amba\x00', b'clkc\x00'):
+            self.assertIn(value, data)
+        for value in (b'xadc_wiz', b'xlnx,axi-xadc', b'xlnx,xadc-wiz'):
+            self.assertNotIn(value, data)
+        self.assertIn('rtl/red_pitaya_ams.v', source)
+        self.assertNotIn('xadc_wiz@83c00000', source)
+
+    def test_built_in_assets_do_not_depend_on_working_directory(self):
+        device = make_device()
+        expected = (Path(redpitaya_module.__file__).parent /
+                    defaultparameters['filename']).resolve()
+        with tempfile.TemporaryDirectory() as temporary_directory:
+            previous_directory = os.getcwd()
+            try:
+                os.chdir(temporary_directory)
+                resolved = device._local_fpga_file(
+                    defaultparameters['filename'], 'FPGA bitstream',
+                    package_relative=True)
+            finally:
+                os.chdir(previous_directory)
+        self.assertEqual(expected, Path(resolved))
+
+    def test_custom_relative_asset_uses_working_directory(self):
+        device = make_device()
+        with tempfile.TemporaryDirectory() as temporary_directory:
+            custom_file = Path(temporary_directory) / 'custom.bin'
+            custom_file.write_bytes(b'custom')
+            previous_directory = os.getcwd()
+            try:
+                os.chdir(temporary_directory)
+                resolved = device._local_fpga_file(
+                    'custom.bin', 'FPGA bitstream', package_relative=False)
+            finally:
+                os.chdir(previous_directory)
+            self.assertEqual(custom_file, Path(resolved))
+
+    def test_ecosystem_version_wins_over_misleading_root_version(self):
+        device = make_device(
+            ecosystem_text='Red Pitaya GNU/Linux ecosystem version 1.04-18',
+            root_text='Red Pitaya Linux 1.07',
+            overlay_available=False, xdevcfg_available=True)
+        self.assertEqual('1.04-18', device.get_os_version())
+        self.assertEqual('/opt/redpitaya/version.txt',
+                         device.os_version_source)
+
+    def test_os207_selects_overlay_but_legacy_selects_xdevcfg(self):
+        device = make_device()
+        self.assertEqual('overlay', device.detect_platform())
+        self.assertEqual('2.07-48', device.os_version)
+
+        legacy = make_device(
+            ecosystem_text='ecosystem version 1.04-18',
+            root_text='Linux image 1.07', overlay_available=False,
+            xdevcfg_available=True)
+        self.assertEqual('legacy', legacy.detect_platform())
+
+    def test_os207_loads_fixed_bin_and_dtbo_paths(self):
+        device = make_device()
+        device.detect_platform()
+        result = device.update_fpga()
+
+        overlay_commands = [command for command in device.ssh.commands
+                            if 'overlay.sh pyrpl' in command]
+        self.assertEqual(1, len(overlay_commands))
+        self.assertIn('/opt/pyrpl/fpga.bit.bin', overlay_commands[0])
+        self.assertIn('/opt/pyrpl/fpga.dtbo', overlay_commands[0])
+        self.assertFalse(any('> /dev/xdevcfg' in command
+                             for command in device.ssh.commands))
+        destinations = [destination for _source, destination
+                        in device.ssh.scp.uploads]
+        self.assertEqual(['/opt/pyrpl/fpga.bit.bin',
+                          '/opt/pyrpl/fpga.dtbo'], destinations)
+        self.assertEqual('overlay', result['loader'])
+        self.assertIn('operating', result['manager_state'])
+
+    def test_missing_dtbo_fails_before_device_mutation(self):
+        device = make_device()
+        device.parameters['dtbo_filename'] = 'fpga/does-not-exist.dtbo'
+        device.detect_platform()
+        with self.assertRaises(OSError) as raised:
+            device.update_fpga()
+        self.assertIn('device-tree overlay not found',
+                      str(raised.exception))
+        self.assertEqual([], device.ssh.scp.uploads)
+        self.assertNotIn('rw', device.ssh.commands)
+        self.assertNotIn('__PYRPL_END__', device.ssh.commands)
+
+    def test_unapproved_os2_assets_fail_before_device_mutation(self):
+        fpga_directory = Path(redpitaya_module.__file__).parent / 'fpga'
+        with tempfile.TemporaryDirectory() as temporary_directory:
+            wrong_bitstream = Path(temporary_directory) / 'wrong.bin'
+            wrong_bitstream.write_bytes(b'not the fork image')
+            wrong_dtbo = Path(temporary_directory) / 'wrong.dtbo'
+            wrong_dtbo.write_bytes(
+                (fpga_directory / 'red_pitaya_os2_z10.dtbo').read_bytes() +
+                b'changed')
+
+            for filename, dtbo_filename, expected_message in (
+                    (str(wrong_bitstream), None,
+                     'does not match this fork\'s preserved FPGA image'),
+                    (None, str(wrong_dtbo),
+                     'does not match this fork\'s approved Z7010 overlay')):
+                with self.subTest(expected_message=expected_message):
+                    device = make_device()
+                    device.detect_platform()
+                    with self.assertRaises(OSError) as raised:
+                        device.update_fpga(
+                            filename=filename, dtbo_filename=dtbo_filename)
+                    self.assertIn(expected_message, str(raised.exception))
+                    self.assertEqual([], device.ssh.scp.uploads)
+                    self.assertNotIn('rw', device.ssh.commands)
+                    self.assertNotIn('__PYRPL_END__', device.ssh.commands)
+
+    def test_os207_refuses_gen2_before_device_mutation(self):
+        device = make_device(profile_id='20', profile_fpga='z10_125_v2')
+        device.detect_platform()
+        with self.assertRaises(ExpectedPyrplError) as raised:
+            device.update_fpga()
+        self.assertIn('does not yet authorize Gen 2', str(raised.exception))
+        self.assertEqual([], device.ssh.scp.uploads)
+        self.assertNotIn('rw', device.ssh.commands)
+        self.assertNotIn('__PYRPL_END__', device.ssh.commands)
+
+    def test_os207_refuses_z7020_before_device_mutation(self):
+        device = make_device(profile_id='6', profile_fpga='z20_125',
+                             profile_zynq='Z7020')
+        device.detect_platform()
+        with self.assertRaises(ExpectedPyrplError):
+            device.update_fpga()
+        self.assertEqual([], device.ssh.scp.uploads)
+        self.assertNotIn('rw', device.ssh.commands)
+
+    def test_other_os2_and_os3_are_not_silently_loaded(self):
+        for ecosystem_text, overlay_available in (
+                ('Red Pitaya OS 2.05-37', False),
+                ('Red Pitaya OS 2.08-1', True),
+                ('Red Pitaya OS 3.00-12', True)):
+            with self.subTest(ecosystem_text=ecosystem_text):
+                device = make_device(
+                    ecosystem_text=ecosystem_text,
+                    overlay_available=overlay_available,
+                    xdevcfg_available=False)
+                self.assertEqual('unsupported', device.detect_platform())
+                with self.assertRaises(ExpectedPyrplError):
+                    device.update_fpga()
+                self.assertEqual([], device.ssh.scp.uploads)
+                self.assertNotIn('rw', device.ssh.commands)
+
+    def test_os207_requires_overlay_capability(self):
+        device = make_device(overlay_available=False)
+        self.assertEqual('unsupported', device.detect_platform())
+        with self.assertRaises(ExpectedPyrplError) as raised:
+            device.update_fpga()
+        self.assertIn('Neither a supported overlay.sh', str(raised.exception))
+
+    def test_unknown_os_does_not_fall_back_to_xdevcfg(self):
+        device = make_device(
+            ecosystem_text='unparseable', root_text='also unparseable',
+            overlay_available=False, xdevcfg_available=True)
+        self.assertEqual('unsupported', device.detect_platform())
+        with self.assertRaises(ExpectedPyrplError):
+            device.update_fpga()
+        self.assertEqual([], device.ssh.scp.uploads)
+        self.assertNotIn('rw', device.ssh.commands)
+
+    def test_failed_overlay_and_manager_state_are_rejected(self):
+        failed = make_device(overlay_succeeds=False)
+        failed.detect_platform()
+        with self.assertRaises(OSError) as raised:
+            failed.update_fpga()
+        self.assertIn('FPGA overlay loading failed', str(raised.exception))
+
+        not_operating = make_device(manager_state='write error')
+        not_operating.detect_platform()
+        with self.assertRaises(OSError) as raised:
+            not_operating.update_fpga()
+        self.assertIn('manager is not operating', str(raised.exception))
+
+    def test_legacy_loader_requires_character_device_and_write_success(self):
+        device = make_device(
+            ecosystem_text='ecosystem 1.04-18', root_text='image 1.07',
+            overlay_available=False, xdevcfg_available=True)
+        device.detect_platform()
+        device.update_fpga()
+        self.assertTrue(any(command.startswith('cat ') and
+                            '> /dev/xdevcfg' in command
+                            for command in device.ssh.commands))
+
+        failed = make_device(
+            ecosystem_text='ecosystem 1.04-18', root_text='image 1.07',
+            overlay_available=False, xdevcfg_available=True,
+            legacy_load_succeeds=False)
+        failed.detect_platform()
+        with self.assertRaises(OSError) as raised:
+            failed.update_fpga()
+        self.assertIn('Legacy FPGA loading failed', str(raised.exception))
+
+    def test_zero_fpga_metadata_is_an_actionable_error(self):
+        device = make_device()
+        device.os_version = '2.07-48'
+        device.client = ZeroMetadataClient()
+        with self.assertRaises(ExpectedPyrplError) as raised:
+            device._validate_fpga_compatibility()
+        self.assertIn("not running this fork's FPGA memory map",
+                      str(raised.exception))
+        self.assertEqual(4, len(device.client.read_requests))
+
+    def test_zero_filter_minimum_bandwidth_is_an_actionable_error(self):
+        register = FilterRegister(address=0x124, filterstages=0x230,
+                                  shiftbits=0x234, minbw=0x238)
+        register.name = 'bandwidth'
+        with self.assertRaises(ExpectedPyrplError) as raised:
+            register._MAXSHIFT(ZeroRegisterModule())
+        self.assertIn("not running this fork's compatible FPGA image",
+                      str(raised.exception))
+        self.assertNotIsInstance(raised.exception, ZeroDivisionError)
+
+
+if __name__ == '__main__':
+    unittest.main()

@@ -27,12 +27,16 @@ class TestPython39Compatibility(object):
     def test_preserves_author_fpga_asset(self):
         fpga_directory = Path(__file__).resolve().parents[1] / "pyrpl" / "fpga"
         bitstream = fpga_directory / "red_pitaya.bin"
+        os2_dtbo = fpga_directory / "red_pitaya_os2_z10.dtbo"
 
         digest = hashlib.sha256(bitstream.read_bytes()).hexdigest()
         assert digest == (
             "dc6e71fb04d3a5a67731a5ddb99e7f80395a1c2fee2b8ae59168ce4252cee9ed"
         )
-        assert not list(fpga_directory.rglob("*.dtbo"))
+        assert list(fpga_directory.rglob("*.dtbo")) == [os2_dtbo]
+        assert hashlib.sha256(os2_dtbo.read_bytes()).hexdigest() == (
+            "41a1c828bc5a7bbe99542353dfd2fbe181927e79b0e7515b86e1abbc006577f9"
+        )
 
     def test_curve_async_compares_running_state_by_value(self):
         class RunningState(str):

@@ -1,0 +1,75 @@
+/dts-v1/;
+/plugin/;
+
+/*
+ * Device-tree overlay for this fork's preserved Zynq-7010 bitstream.
+ *
+ * The programmable logic uses the PS fabric clocks and HP0/HP1 AXI ports,
+ * but it does not contain the AXI XADC Wizard used by maintained PyRPL.
+ * Slow analog inputs are handled by the XADC primitive instantiated directly
+ * in rtl/red_pitaya_ams.v and exposed through the PyRPL register map.
+ */
+
+/ {
+    fragment@0 {
+        target = <&fpga_full>;
+
+        __overlay__ {
+            firmware-name = "fpga.bit.bin";
+
+            clocking0: clocking0 {
+                #clock-cells = <0>;
+                assigned-clock-rates = <125000000>;
+                assigned-clocks = <&clkc 15>;
+                clock-output-names = "fabric_clk";
+                clocks = <&clkc 15>;
+                compatible = "xlnx,fclk";
+            };
+
+            clocking1: clocking1 {
+                #clock-cells = <0>;
+                assigned-clock-rates = <250000000>;
+                assigned-clocks = <&clkc 16>;
+                clock-output-names = "fabric_clk";
+                clocks = <&clkc 16>;
+                compatible = "xlnx,fclk";
+            };
+
+            clocking2: clocking2 {
+                #clock-cells = <0>;
+                assigned-clock-rates = <50000000>;
+                assigned-clocks = <&clkc 17>;
+                clock-output-names = "fabric_clk";
+                clocks = <&clkc 17>;
+                compatible = "xlnx,fclk";
+            };
+
+            clocking3: clocking3 {
+                #clock-cells = <0>;
+                assigned-clock-rates = <200000000>;
+                assigned-clocks = <&clkc 18>;
+                clock-output-names = "fabric_clk";
+                clocks = <&clkc 18>;
+                compatible = "xlnx,fclk";
+            };
+        };
+    };
+
+    fragment@1 {
+        target = <&amba>;
+
+        __overlay__ {
+            afi0: afi0@f8008000 {
+                compatible = "xlnx,afi-fpga";
+                reg = <0xf8008000 0x1000>;
+                xlnx,afi-width = <0>;
+            };
+
+            afi1: afi1@f8009000 {
+                compatible = "xlnx,afi-fpga";
+                reg = <0xf8009000 0x1000>;
+                xlnx,afi-width = <0>;
+            };
+        };
+    };
+};

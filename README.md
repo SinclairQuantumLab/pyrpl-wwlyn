@@ -38,7 +38,8 @@ conda env create -f pyrpl.yml
 conda activate pyrpl-py314
 ```
 
-Both methods install this checkout, including its fork-specific FPGA image.
+Both methods install this checkout, including its fork-specific FPGA image and
+OS 2 Z7010 overlay.
 The declared dependency bounds support NumPy 2 without manual monkeypatches.
 Do not
 install the unrelated `pyrpl` package from PyPI over this checkout.
@@ -74,6 +75,24 @@ python setup.py develop
 ```
 
 ## Quick start
+
+### Red Pitaya compatibility
+
+This branch preserves the author's exact FPGA image for an
+original-generation STEMlab 125-14 with Zynq-7010. The loader supports:
+
+- the author's Red Pitaya OS 1.04-18 environment through `/dev/xdevcfg`, after
+  verifying that it is a character device; and
+- Red Pitaya OS 2.07 on ecosystem profile 1 or 2 (`z10_125`, Z7010), through
+  FPGA Manager and the packaged `red_pitaya_os2_z10.dtbo`.
+
+Other OS 2 minor releases, OS 3, Gen 2, and Z7020 targets are refused before
+FPGA files are uploaded. OS 2.07 support has passed hardware-free regression
+tests but still requires a controlled field validation before it should be
+considered proven.
+The built-in FPGA filenames resolve from the installed package, so launching
+PyRPL from another working directory does not substitute another image.
+
 First, hook up your Red Pitaya / STEMlab to a LAN accessible from your computer (follow the instructions for this on redpitya.com and make sure you can access your Red Pitaya with a web browser by typing its ip-address /  hostname into the address bar).
 In a command line terminal, type
 ```
@@ -94,6 +113,7 @@ $env:REDPITAYA_HOSTNAME = "_FAKE_"
 $env:PYRPL_USER_DIR = Join-Path $env:TEMP ("pyrpl-test-" + [guid]::NewGuid())
 New-Item -ItemType Directory -Path $env:PYRPL_USER_DIR | Out-Null
 .\.venv\Scripts\python.exe -m unittest -v tests\test_python314_compatibility.py tests\test_ipykernel_compatibility.py
+.\.venv\Scripts\python.exe -m unittest -v pyrpl.test.test_redpitaya_fpga_loader
 .\.venv\Scripts\nosetests.exe -v pyrpl.test.test_memory pyrpl.test.test_proxyproperty tests\test_python39_compatibility.py tests\test_python314_compatibility.py
 ```
 
@@ -121,6 +141,12 @@ git pull
 ```
 
 ## FPGA bitfile generation (only for developers)
+
+The packaged `pyrpl/fpga/red_pitaya.bin` is a hash-pinned artifact that defines
+this fork's behavior. Do not replace it merely by running the historical build;
+see `pyrpl/fpga/README.md` for its provenance and the separately reproducible
+OS 2 overlay.
+
 In case you would like to modify the logic running on the FPGA, you should make sure that you are able to [generate a working bitfile on your machine](http://pyrpl.readthedocs.io/en/latest/developer_guide/fpga_compilation.html). In short, to do so, you must install Vivado 2015.4 [(64-bit windows](windows web-installer](https://www.xilinx.com/member/forms/download/xef.html?filename=Xilinx_Vivado_SDK_2015.4_1118_2_Win64.exe&akdm=1) or [Linux)](https://www.xilinx.com/member/forms/download/xef.html?filename=Xilinx_Vivado_SDK_2015.4_1118_2_Lin64.bin&akdm=1) [together with a working license](http://pyrpl.readthedocs.io/en/latest/developer_guide/fpga_compilation.html#fpga-license). Next, with a terminal in the pyrpl root directory, type
 ```
 cd pyrpl/fpga

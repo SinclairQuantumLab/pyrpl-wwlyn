@@ -17,6 +17,13 @@ LOG=>> fpga.log 2>&1
 # both tools are run in batch mode with an option to avoid log/journal files
 VIVADO = D:/Vivado_2015.4/Vivado/2015.4/bin/vivado -nolog -nojournal -mode batch
 
+.PHONY: os2-dtbo
+
+os2-dtbo: red_pitaya_os2_z10.dtbo
+
+red_pitaya_os2_z10.dtbo: red_pitaya_os2_z10.dts
+	dtc -@ -I dts -O dtb -o $@ $<
+
 all: clean $(FPGA_BIN) postclean
 
 clean:

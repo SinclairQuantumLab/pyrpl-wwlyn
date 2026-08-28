@@ -1,3 +1,31 @@
+# Packaged hardware artifacts
+
+This fork's DSP behavior is defined by the preserved
+`pyrpl/fpga/red_pitaya.bin`. Do not replace it with an official PyRPL image or
+a new local build. Its SHA-256 is:
+
+```text
+dc6e71fb04d3a5a67731a5ddb99e7f80395a1c2fee2b8ae59168ce4252cee9ed
+```
+
+The author produced that image for an original-generation STEMlab 125-14 with
+a Zynq-7010 on Red Pitaya OS 1.04-18. Its complete reproducible-build
+provenance is unavailable.
+
+For Red Pitaya OS 2.07, this fork packages a source-derived companion overlay:
+
+| file | purpose |
+| --- | --- |
+| `red_pitaya_os2_z10.dts` | reviewable device-tree overlay source for the preserved Z7010 image |
+| `red_pitaya_os2_z10.dtbo` | compiled overlay loaded by FPGA Manager; SHA-256 `41a1c828bc5a7bbe99542353dfd2fbe181927e79b0e7515b86e1abbc006577f9` |
+
+The overlay enables the implemented fabric clocks and AXI interfaces. It does
+not contain the AXI XADC node found in maintained PyRPL: this fork instantiates
+the Zynq `XADC` primitive directly in `rtl/red_pitaya_ams.v` and exposes it
+through the PyRPL register map. The BIN/DTBO pair is restricted in software to
+original Z7010 ecosystem profiles 1 and 2 (`z10_125`). It is not approved for
+Gen 2, Z7020, early OS 2, or OS 3.
+
 # Directory structure
 
 |  path           | contents
@@ -9,10 +37,7 @@
 | `fpga/ip/`      | third party IP, for now Zynq block diagrams
 | `fpga/rtl/`     | Verilog (SystemVerilog) "Register-Transfer Level"
 | `fpga/sdc/`     | "Synopsys Design Constraints" contains Xilinx design constraints
-| `fpga/sim/`     | simulation scripts
-| `fpga/tbn/`     | Verilog (SystemVerilog) "test bench"
-|                 |
-| `fpga/hsi/`     | "Hardware Software Interface" contains FSBL (First Stage Boot Loader) and DTS (Design Tree) builds
+| `fpga/red_pitaya_os2_z10.dts` | source for the OS 2.07 Z7010 overlay
 
 # Build process
 
@@ -27,37 +52,49 @@ The next scripts perform various tasks:
 
 | TCL script                      | action
 |---------------------------------|---------------------------------------------
-| `red_pitaya_hsi_dram_test.tcl`  | should create the `zynq_dram_test` but the produced binary can not be run from a SD card
-| `red_pitaya_hsi_dts.tcl`        | creates device tree sources
-| `red_pitaya_hsi_fsbl.tcl`       | creates FSBL executable binary
 | `red_pitaya_vivado_project.tcl` | creates a Vivado project for graphical editing
 | `red_pitaya_vivado.tcl`         | creates the bitstream and reports
 
-To generate a bit file, reports, device tree and FSBL, run these two commands:
+To generate a new bit file and reports, run these two commands:
 ```bash
 source /opt/Xilinx/Vivado/2015.4/settings64.sh
 make
 ```
 
-# Device tree
+This produces a new hardware artifact; it must not silently replace the
+hash-pinned fork image.
+
+# OS 2 device-tree overlay
 
 Device tree is used by Linux to describe features and address space of memory mapped hardware attached to the CPU.
 
-Running `make` inside this directory will create a device tree source and some include files:
+On OS 2.07, `overlay.sh` loads both the FPGA image and
+`red_pitaya_os2_z10.dtbo`. The overlay source declares four fabric clocks at
+125, 250, 50, and 200 MHz, the HP0/HP1 fabric interfaces, and the required
+`fpga.bit.bin` firmware name. It does not replace the board's complete base
+device tree.
 
-| device tree file | contents
-|------------------|------------------------------------------------------------
-| `zynq-7000.dtsi` | description of peripherals inside PS (processing system)
-| `pl.dtsi`        | description of AXI attached peripherals inside PL (programmable logic)
-| `system.dts`     | description of all peripherals, includes the above `*.dtsi` files
+Rebuild only the overlay with Device Tree Compiler 1.7.2 or an explicitly
+validated equivalent:
 
-To enable some Linux drivers (Ethernet, XADC, I2C EEPROM, SPI, GPIO and LED) the device tree source is patched using `../patches/devicetree.patch`.
+```bash
+make os2-dtbo
+sha256sum red_pitaya_os2_z10.dtbo
+```
+
+The expected hash is the value recorded above. `dtc` emits address-cell
+warnings for the AFI overlay nodes; decompiling the tracked result confirms the
+intended nodes. Any semantic or binary change requires hardware review and a
+new controlled field validation.
 
 # Signal mapping
 
 ## XADC inputs
 
-XADC input data can be accessed through the Linux IIO (Industrial IO) driver interface.
+In this fork, PyRPL accesses XADC input data through the direct XADC primitive
+and its custom register map. The Linux IIO filenames below describe the
+historical board device-tree interface; the OS 2 fork overlay does not add an
+AXI XADC/IIO device.
 
 | E2 con | schematic | ZYNQ p/n | XADC in | IIO filename     | measurement target | range |
 |--------|-----------|----------|---------|------------------|--------------------|-------|
