@@ -85,6 +85,11 @@ probes actual loader capabilities.
 - After the monitor client connects, four positive filter-metadata registers
   are required. A zero `MINBW` now raises a compatibility error instead of a
   `ZeroDivisionError`.
+- `RedPitaya.preflight_fpga_update()` applies the same loader, asset, and
+  hardware-profile gates without mutation and reports uptime, current FPGA
+  Manager state, and the current loaded-image identifier. The packaged
+  `python -m pyrpl.redpitaya_preflight HOSTNAME` command constructs the device
+  with FPGA reload, server reload, and autostart all disabled.
 
 ## Offline validation
 
@@ -110,12 +115,13 @@ Current offline state on CPython 3.14.4:
 
 - DTC 1.7.2 recompilation produces both tracked DTBO hashes exactly.
 - `compileall` succeeds for `pyrpl`.
-- The loader, Python 3.14, and real-ipykernel unittest set passes 31 tests.
+- The loader, Python 3.14, and real-ipykernel unittest set passes 32 tests.
 - The safe Nose NG compatibility set passes 17 tests.
 - A wheel built from the working tree contains the exact BIN and exactly two
-  matching DTS/DTBO variants; all three packaged binary hashes match.
+  matching DTS/DTBO variants plus the preflight module; all three packaged
+  binary hashes match.
 - That wheel installs into a new Python 3.14 environment outside the source
-  tree, where all 22 loader tests pass.
+  tree, where all 23 loader tests pass and the preflight command is available.
 
 ## Live validation still required
 
@@ -125,6 +131,10 @@ booted from recoverable OS media. To cover OS 2.07+ rather than one release,
 validate at least one `fpga.bit.bin` OS 2 image and one newer `fpga.bin` OS 2
 image. Before loading, collect the reported OS, detected overlay contract,
 profile ID, FPGA path, Zynq type, and uptime. Then require all of the following:
+
+```powershell
+python -m pyrpl.redpitaya_preflight rp-xxxxxx.local
+```
 
 1. the profile gate identifies the original Z7010 STEMlab 125-14;
 2. `overlay.sh` completes without loss of SSH or a board reboot;

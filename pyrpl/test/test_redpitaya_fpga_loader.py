@@ -92,6 +92,13 @@ class FakeSsh(object):
             if 'overlay_script' not in self.omitted_markers:
                 output += '\nPYRPL_OVERLAY_SCRIPT_END'
             return output
+        if 'PYRPL_PREFLIGHT_UPTIME:' in command:
+            output = (command + '\nPYRPL_PREFLIGHT_UPTIME:1234.5'
+                      '\nPYRPL_PREFLIGHT_MANAGER:' + self.manager_state +
+                      '\nPYRPL_PREFLIGHT_LOADED:' + self.loaded_info)
+            if 'preflight' not in self.omitted_markers:
+                output += '\nPYRPL_PREFLIGHT_END'
+            return output
         if 'PYRPL_OVERLAY_' in command:
             marker = ('PYRPL_OVERLAY_OK' if self.overlay_succeeds else
                       'PYRPL_OVERLAY_FAILED')
@@ -300,6 +307,62 @@ class TestRedPitayaFpgaLoader(unittest.TestCase):
                                  result['fpga_filename'])
                 self.assertIn('operating', result['manager_state'])
 
+    def test_os207_plus_preflight_is_read_only_and_matches_update(self):
+        for ecosystem_text, fpga_filename, dtbo_basename, dtbo_digest in (
+                ('Red Pitaya OS 2.07-48', 'fpga.bit.bin',
+                 'red_pitaya_os2_z10.dtbo',
+                 '41a1c828bc5a7bbe99542353dfd2fbe181927e79b0e7515b86e1abbc006577f9'),
+                ('Red Pitaya OS 2.08-1', 'fpga.bin',
+                 'red_pitaya_os2_z10_fpga_bin.dtbo',
+                 '99f0fd0c3ce394fb0c86e4dec95895b8a5855cc80ebbfd5fedc961fb9ed4a35c')):
+            with self.subTest(fpga_filename=fpga_filename):
+                device = make_device(
+                    ecosystem_text=ecosystem_text,
+                    overlay_fpga_filename=fpga_filename)
+                report = device.preflight_fpga_update()
+
+                self.assertTrue(report['read_only'])
+                self.assertEqual('overlay', report['loader'])
+                self.assertEqual(fpga_filename, report['fpga_filename'])
+                self.assertEqual(
+                    {'id': '1', 'fpga': 'z10_125', 'zynq': 'Z7010'},
+                    report['hardware_profile'])
+                self.assertEqual(dtbo_basename,
+                                 Path(report['local_dtbo']).name)
+                self.assertEqual(dtbo_digest,
+                                 report['local_dtbo_sha256'])
+                self.assertEqual(
+                    'dc6e71fb04d3a5a67731a5ddb99e7f80395a1c2fee2b8ae59168ce4252cee9ed',
+                    report['local_bitstream_sha256'])
+                self.assertEqual('/opt/pyrpl/' + fpga_filename,
+                                 report['remote_bitstream'])
+                self.assertEqual('/opt/pyrpl/fpga.dtbo',
+                                 report['remote_dtbo'])
+                self.assertEqual('1234.5', report['uptime_seconds'])
+                self.assertEqual('operating',
+                                 report['fpga_manager_state'])
+                self.assertEqual([], device.ssh.scp.uploads)
+                self.assertNotIn('rw', device.ssh.commands)
+                self.assertNotIn('__PYRPL_END__', device.ssh.commands)
+                self.assertFalse(any(
+                    'overlay.sh pyrpl ' in command
+                    for command in device.ssh.commands))
+                self.assertFalse(any(
+                    'killall nginx' in command
+                    for command in device.ssh.commands))
+                allowed_prefixes = (
+                    'cat /opt/redpitaya/version.txt 2>/dev/null;',
+                    'cat /root/.version 2>/dev/null;',
+                    'if [ -x /opt/redpitaya/sbin/overlay.sh ];',
+                    'cat /opt/redpitaya/sbin/overlay.sh 2>/dev/null;',
+                    "printf '\\nPYRPL_PROFILE_ID:';",
+                    "printf '\\nPYRPL_PREFLIGHT_UPTIME:';",
+                )
+                self.assertTrue(all(
+                    command == '' or command.startswith(allowed_prefixes)
+                    for command in device.ssh.commands),
+                    device.ssh.commands)
+
     def test_missing_dtbo_fails_before_device_mutation(self):
         device = make_device()
         device.parameters['dtbo_filename'] = 'fpga/does-not-exist.dtbo'
@@ -422,6 +485,15 @@ class TestRedPitayaFpgaLoader(unittest.TestCase):
                 self.assertEqual([], device.ssh.scp.uploads)
                 self.assertNotIn('rw', device.ssh.commands)
                 self.assertNotIn('__PYRPL_END__', device.ssh.commands)
+
+        device = make_device(omitted_markers=('preflight',))
+        with self.assertRaises(ExpectedPyrplError) as raised:
+            device.preflight_fpga_update()
+        self.assertIn('read-only FPGA preflight returned incomplete',
+                      str(raised.exception))
+        self.assertEqual([], device.ssh.scp.uploads)
+        self.assertNotIn('rw', device.ssh.commands)
+        self.assertNotIn('__PYRPL_END__', device.ssh.commands)
 
     def test_unknown_os_does_not_fall_back_to_xdevcfg(self):
         device = make_device(

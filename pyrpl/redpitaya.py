@@ -570,6 +570,117 @@ class RedPitaya(object):
                 'FPGA image (expected SHA-256 %s, got %s): %s' %
                 (FORK_BITSTREAM_SHA256, digest, source))
 
+    @staticmethod
+    def _file_sha256(source):
+        with open(source, 'rb') as source_file:
+            return hashlib.sha256(source_file.read()).hexdigest()
+
+    def _prepare_fpga_update(self, filename=None, dtbo_filename=None):
+        """Resolve and validate an FPGA update without changing the board."""
+        self._require_supported_loader()
+        bitstream_name = (filename if filename is not None else
+                          self.parameters['filename'])
+        source = self._local_fpga_file(
+            bitstream_name, 'FPGA bitstream',
+            package_relative=(
+                bitstream_name == defaultparameters['filename']))
+        dtbo_source = None
+        profile = None
+        if self.fpga_loader == 'overlay':
+            configured_dtbo = self.parameters['dtbo_filename']
+            if dtbo_filename is not None:
+                dtbo_name = dtbo_filename
+            elif configured_dtbo == defaultparameters['dtbo_filename']:
+                dtbo_name = OS2_Z10_DTBO_FILENAMES[
+                    self.os2_fpga_filename]
+            else:
+                dtbo_name = configured_dtbo
+            dtbo_source = self._local_fpga_file(
+                dtbo_name, 'FPGA device-tree overlay',
+                package_relative=(
+                    dtbo_name in OS2_Z10_DTBO_FILENAMES.values()))
+            self._validate_os2_bitstream(source)
+            self._validate_os2_dtbo(
+                dtbo_source, self.os2_fpga_filename)
+            profile = self._validate_os2_z10_profile()
+            server_directory = '/opt/pyrpl/'
+            bin_file_path = self._server_file(
+                server_directory, self.os2_fpga_filename)
+            dtbo_file_path = '/opt/pyrpl/fpga.dtbo'
+        else:
+            server_directory = self.parameters['serverdirname']
+            bin_file_path = self._server_file(
+                server_directory, self.parameters['serverbinfilename'])
+            dtbo_file_path = None
+        return {
+            'source': source,
+            'dtbo_source': dtbo_source,
+            'profile': profile,
+            'server_directory': server_directory,
+            'bin_file_path': bin_file_path,
+            'dtbo_file_path': dtbo_file_path,
+        }
+
+    def _read_fpga_preflight_state(self):
+        """Read current board state with a terminal marker and no mutation."""
+        command = (
+            "printf '\\nPYRPL_PREFLIGHT_UPTIME:'; "
+            "cut -d ' ' -f 1 /proc/uptime 2>/dev/null; "
+            "printf '\\nPYRPL_PREFLIGHT_MANAGER:'; "
+            'cat /sys/class/fpga_manager/fpga0/state 2>/dev/null; '
+            "printf '\\nPYRPL_PREFLIGHT_LOADED:'; "
+            'cat /tmp/loaded_fpga.inf 2>/dev/null; '
+            "printf '\\nPYRPL_PREFLIGHT_\"\"END\\n'")
+        result = self.ssh.ask(command)
+        result = self._wait_for_output_marker(
+            result, 'PYRPL_PREFLIGHT_END')
+        if 'PYRPL_PREFLIGHT_END' not in result:
+            raise ExpectedPyrplError(
+                'The read-only FPGA preflight returned incomplete SSH '
+                'output; refusing to continue.')
+
+        def last_match(pattern):
+            matches = re.findall(pattern, result, flags=re.IGNORECASE)
+            return matches[-1].strip() if matches else None
+
+        return {
+            'uptime_seconds': last_match(
+                r'PYRPL_PREFLIGHT_UPTIME:([0-9]+(?:\.[0-9]+)?)'),
+            'fpga_manager_state': last_match(
+                r'PYRPL_PREFLIGHT_MANAGER:([A-Za-z_-]+)'),
+            'loaded_fpga_info': last_match(
+                r'PYRPL_PREFLIGHT_LOADED:([^\r\n]*)'),
+        }
+
+    def preflight_fpga_update(self, filename=None, dtbo_filename=None):
+        """Return the validated update plan without changing device state."""
+        prepared = self._prepare_fpga_update(filename, dtbo_filename)
+        profile = prepared['profile']
+        report = {
+            'read_only': True,
+            'hostname': self.ssh.hostname,
+            'os_version': self.os_version,
+            'os_version_source': self.os_version_source,
+            'loader': self.fpga_loader,
+            'overlay_available': self.overlay_available,
+            'xdevcfg_available': self.xdevcfg_available,
+            'fpga_filename': self.os2_fpga_filename,
+            'hardware_profile': (
+                {'id': profile['id'], 'fpga': profile['fpga'],
+                 'zynq': profile['zynq']} if profile is not None else None),
+            'local_bitstream': prepared['source'],
+            'local_bitstream_sha256': self._file_sha256(
+                prepared['source']),
+            'local_dtbo': prepared['dtbo_source'],
+            'local_dtbo_sha256': (
+                self._file_sha256(prepared['dtbo_source'])
+                if prepared['dtbo_source'] is not None else None),
+            'remote_bitstream': prepared['bin_file_path'],
+            'remote_dtbo': prepared['dtbo_file_path'],
+        }
+        report.update(self._read_fpga_preflight_state())
+        return report
+
     def put_file(self, source, destination):
         """Upload a file, retrying only failures that occur before loading."""
         last_error = None
@@ -587,40 +698,12 @@ class RedPitaya(object):
 
     def update_fpga(self, filename=None, dtbo_filename=None):
         """Program the fork image on legacy OS or supported OS 2.07+."""
-        self._require_supported_loader()
-        bitstream_name = (filename if filename is not None else
-                          self.parameters['filename'])
-        source = self._local_fpga_file(
-            bitstream_name, 'FPGA bitstream',
-            package_relative=(
-                bitstream_name == defaultparameters['filename']))
-        dtbo_source = None
-        if self.fpga_loader == 'overlay':
-            configured_dtbo = self.parameters['dtbo_filename']
-            if dtbo_filename is not None:
-                dtbo_name = dtbo_filename
-            elif configured_dtbo == defaultparameters['dtbo_filename']:
-                dtbo_name = OS2_Z10_DTBO_FILENAMES[
-                    self.os2_fpga_filename]
-            else:
-                dtbo_name = configured_dtbo
-            dtbo_source = self._local_fpga_file(
-                dtbo_name, 'FPGA device-tree overlay',
-                package_relative=(
-                    dtbo_name in OS2_Z10_DTBO_FILENAMES.values()))
-            self._validate_os2_bitstream(source)
-            self._validate_os2_dtbo(
-                dtbo_source, self.os2_fpga_filename)
-            self._validate_os2_z10_profile()
-            server_directory = '/opt/pyrpl/'
-            bin_file_path = self._server_file(
-                server_directory, self.os2_fpga_filename)
-            dtbo_file_path = '/opt/pyrpl/fpga.dtbo'
-        else:
-            server_directory = self.parameters['serverdirname']
-            bin_file_path = self._server_file(
-                server_directory, self.parameters['serverbinfilename'])
-            dtbo_file_path = None
+        prepared = self._prepare_fpga_update(filename, dtbo_filename)
+        source = prepared['source']
+        dtbo_source = prepared['dtbo_source']
+        server_directory = prepared['server_directory']
+        bin_file_path = prepared['bin_file_path']
+        dtbo_file_path = prepared['dtbo_file_path']
 
         uploaded_paths = []
         load_error = None

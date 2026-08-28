@@ -40,6 +40,10 @@
 - Do not contact, restart, or program a physical Red Pitaya unless live-device
   testing is explicitly requested. Running `test.ipynb`, `reloadfpga=True`,
   or `reloadserver=True` mutates the device.
+- `python -m pyrpl.redpitaya_preflight HOSTNAME` is the packaged read-only
+  field-preflight command. It still contacts the named board and therefore
+  requires explicit live-device authorization, but it must never upload,
+  remount, stop services, start a server, or program the FPGA.
 
 ## Validation
 
@@ -70,7 +74,7 @@
 - OS-loader changes must also pass
   `python -m unittest pyrpl.test.test_redpitaya_fpga_loader`. The wheel must
   contain the exact fork BIN plus both source-identical firmware-name DTS/DTBO
-  variants and no other DTBO.
+  variants, `pyrpl/redpitaya_preflight.py`, and no other DTBO.
 
 ## Configuration and notebooks
 

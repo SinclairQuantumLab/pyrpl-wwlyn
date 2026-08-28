@@ -95,6 +95,20 @@ before it should be considered proven.
 The built-in FPGA filenames resolve from the installed package, so launching
 PyRPL from another working directory does not substitute another image.
 
+After booting the intended OS 2 image, the packaged preflight command can
+collect the release, overlay contract, board profile, current FPGA Manager
+state, uptime, and exact local asset hashes without loading anything:
+
+```powershell
+python -m pyrpl.redpitaya_preflight rp-xxxxxx.local
+```
+
+It opens an SSH connection and prompts for the password, but sets
+`reloadfpga=False`, `reloadserver=False`, and `autostart=False`. It refuses an
+unsupported loader, mismatched board profile, unapproved asset, or incomplete
+SSH result. Run it only when live read-only access to the named board is
+intended.
+
 First, hook up your Red Pitaya / STEMlab to a LAN accessible from your computer (follow the instructions for this on redpitya.com and make sure you can access your Red Pitaya with a web browser by typing its ip-address /  hostname into the address bar).
 In a command line terminal, type
 ```
