@@ -14,6 +14,15 @@
 
 ## FPGA and device safety
 
+- The fork author's known hardware environment was Red Pitaya OS `1.04-18`
+  on an original-generation STEMlab 125-14 with a Zynq-7010. Treat that as
+  provenance for the legacy `/dev/xdevcfg` loader, not as permission to
+  downgrade or program a board. Before any live load, positively exclude
+  Gen 2, Z7020, 4-input, and slave variants and require `/dev/xdevcfg` to be
+  a character device.
+- On the confirmed `1.04-18` image, `/root/.version` reports the underlying
+  Linux image as `1.07`. Validate the ecosystem release with
+  `/opt/redpitaya/version.txt`, which reports version `1.04`, build `18`.
 - Do not modify or rebuild `pyrpl/fpga/red_pitaya.bin`. Its expected SHA-256
   is `dc6e71fb04d3a5a67731a5ddb99e7f80395a1c2fee2b8ae59168ce4252cee9ed`.
 - The author fork contains no DTBO. Do not add one or change FPGA loading,

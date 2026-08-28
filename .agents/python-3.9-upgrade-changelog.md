@@ -33,8 +33,9 @@ The upgrade has a deliberately narrow scope:
    and for the FPGA preservation boundary.
 
 It does not port the project to newer Python versions, modernize every
-deprecated API, add modern Red Pitaya OS loading, add a DTBO, rebuild the
-FPGA, or claim live-device validation.
+deprecated API, add modern Red Pitaya OS loading, add a DTBO, or rebuild the
+FPGA. Live-device validation is limited to the author's matching legacy
+hardware and OS environment described below.
 
 ## Changed files
 
@@ -73,7 +74,7 @@ The following bounds are intentional:
 | NumPy | `>=1.23,<1.24` | The legacy source still uses aliases such as `np.float`, `np.int`, and `np.complex`. |
 | SciPy | `>=1.9,<1.12` | Lockbox code still imports `scipy.misc.derivative`. |
 | lmfit | `>=1.0.1,<1.3.3` | Keeps lmfit compatible with NumPy 1.23. |
-| Paramiko | `>=2.0,<4` | Avoids an untested Paramiko 4 major upgrade. Validation resolved 3.5.1; live SSH was not exercised. |
+| Paramiko | `>=2.0,<4` | Avoids an untested Paramiko 4 major upgrade. Validation resolved 3.5.1 and exercised live SSH against the author's legacy target environment. |
 | netifaces2 | `>=0.0.22` | Provides the `netifaces` import and a Windows CPython 3.9 wheel. The original `netifaces` distribution failed to build on the target machine. |
 | pyqtgraph | `>=0.11` | Supports the author's `GraphicsLayoutWidget` migration. |
 | PyQt5 | `>=5.15` | Supplies the supported Qt binding. |
@@ -198,9 +199,7 @@ Its four tests verify:
 
 ## Validation completed
 
-The package-bearing implementation tree was validated without contacting
-hardware. This later documentation-only amendment does not change that code or
-the packaged files:
+The package-bearing implementation tree first passed hardware-free validation:
 
 - CPython `3.9.25` created and installed the checkout successfully.
 - The fresh installation contained 68 installed distributions and
@@ -222,15 +221,36 @@ the packaged files:
 - Installing that wheel into a fresh Python 3.9 environment succeeded;
   `pip check` passed and PyRPL imported from `site-packages`.
 
+### Authorized live-device smoke validation
+
+Live validation was subsequently authorized on a confirmed original-generation
+STEMlab 125-14 running the author's Red Pitaya ecosystem `1.04-18`:
+
+- `/opt/redpitaya/version.txt` reported ecosystem version `1.04`, build `18`.
+  `/root/.version` reported `1.07`, which is the underlying Linux image rather
+  than the ecosystem release; the kernel reported `4.9.0-xilinx`.
+- `/dev/xdevcfg` was verified to be a character device before programming.
+- The preserved fork bitstream with SHA-256
+  `dc6e71fb04d3a5a67731a5ddb99e7f80395a1c2fee2b8ae59168ce4252cee9ed`
+  was loaded through the author's legacy path, with no DTBO substitution.
+- CPython `3.9.25` completed `Pyrpl(...)` initialization with FPGA and server
+  reload enabled. The process exited successfully, and the earlier lockbox
+  `ZeroDivisionError` did not recur.
+- Read-only postflight confirmed ecosystem `1.04-18`, the character device,
+  an installed executable PyRPL server, and cleanup of the staged bitstream.
+
+This validates only the author's matching original-generation Zynq-7010
+hardware and legacy OS environment. It does not establish compatibility with
+Gen 2, Z7020, 4-input, slave, or OS 2.x/3.x targets.
+
 ## Not validated
 
-- No physical Red Pitaya was contacted, restarted, or programmed.
 - `test.ipynb` was not executed, modified, or included.
-- No FPGA-manager, overlay, `/dev/xdevcfg`, server-reload, or live register
-  behavior was exercised.
+- No FPGA-manager or overlay behavior was exercised; those mechanisms belong
+  to newer Red Pitaya OS releases and remain outside this upgrade.
 - The complete legacy test suite was not run because parts of it require or
   mutate hardware.
-- No claim is made that this branch supports a Red Pitaya OS/bitstream
+- No claim is made that this branch supports a hardware, OS, or bitstream
   combination that the author did not provide.
 
 Live-device validation is a separate, explicitly authorized task and must use
