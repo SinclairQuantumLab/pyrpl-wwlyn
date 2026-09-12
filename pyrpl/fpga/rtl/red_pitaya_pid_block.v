@@ -180,10 +180,6 @@ reg [ 32-1: 0] set_filter;   // filter setting
 reg signed [ 14-1:0] out_max;
 reg signed [ 14-1:0] out_min;
 
-// Declare integrator readback before the register-bus case uses it.
-localparam IBW = ISR+14;
-wire signed [IBW-ISR-1:0] int_shr;
-
 //  System bus connection
 always @(posedge clk_i) begin
    if (rstn_i == 1'b0) begin
@@ -326,9 +322,11 @@ assign kp_final = (pause_p == 1'b1) ? kp_reg_held : kp_reg;
 //formerly
 //-localparam IBW = 64; //integrator bit-width. Over-represent the integral sum to record longterm drifts
 //-reg   [15+GAINBITS-1: 0] ki_mult  ;
+localparam IBW = ISR+14; //integrator bit-width. Over-represent the integral sum to record longterm drifts (overrepresented by 2 bits)
 reg signed  [16+GAINBITS-1: 0] ki_mult ; //16 comes from error
 wire signed [IBW  : 0] int_sum       ;
 reg signed  [IBW-1: 0] int_reg       ;
+wire signed [IBW-ISR-1: 0] int_shr   ;
 
 always @(posedge clk_i) begin
    if (rstn_i == 1'b0) begin
@@ -358,7 +356,7 @@ assign int_shr = $signed(int_reg[IBW-1:ISR]) ;
 wire signed [    39-1: 0] kd_mult       ;
 reg signed  [39-DSR-1: 0] kd_reg        ;
 reg signed  [39-DSR-1: 0] kd_reg_r      ;
-wire signed [39-DSR  : 0] kd_reg_s      ;
+reg signed  [39-DSR  : 0] kd_reg_s      ;
 
 generate 
 	if (DERIVATIVE == 1) begin
@@ -381,8 +379,7 @@ generate
         assign kd_mult = (pause_d==1'b1) ? $signed({15+GAINBITS-1{1'b0}}) : $signed(error) * $signed(set_kd);
 	end
 	else begin
-		// Drive the sum's D input; a local wire here shadows it and leaves
-		// the default DERIVATIVE=0 PID output unknown in RTL simulation.
+		wire [15+GAINBITS-DSR:0] kd_reg_s;
 		assign kd_reg_s = {15+GAINBITS-DSR+1{1'b0}};
 	end
 endgenerate 

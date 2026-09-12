@@ -222,3 +222,40 @@ milestone's first build gate is complete, **not** the entire Z7020 port.
 4. Only after those repo-side gates, derive separately named Z7020 BIN/DTBO
    artifacts and their matching loader/provenance regressions. The current
    loader continues to reject Z7020; physical acceptance remains deferred.
+
+## Separate common repairs from the platform port — 2026-09-12
+
+The user clarified the boundary: existing shared RTL defects are common
+repairs, while changes required by the OS/device/interface belong to the port.
+Finding timing failures during the port does not authorize PID/filter redesign,
+extra feedback latency or reduced clocks. Their causes must be classified
+before further implementation. The previous next-work list is an investigation
+backlog, not permission to perform those algorithmic changes on this branch.
+
+The mixed PID edits in `6e76d87` are now represented independently on
+`fix/pid-rtl-shadowing`, based on `develop` at `0138ba0`:
+
+- `8794f01`: declaration-only RTL simulation compatibility prerequisite;
+- `c596274`: existing disabled-D signal-shadowing repair and unchanged
+  self-checking regression harness;
+- `2703645`: merge those shared changes into `develop`.
+
+The common source independently reproduced the original compile failure, then
+34/341 behavioral failures with only the declaration move, then 341/341 passes
+with the shadowing correction. This is not a Z7020-specific algorithm change.
+Shared implementation/evidence belongs in
+`.agents/common-pid-rtl-fix-changelog.md`, supplied by the subsequent merge.
+
+This corrective commit restores **only the PID RTL** to the pre-port blob
+`d293ac95b80503311d04d1dcaaa19321b3ef1e02`. It deliberately establishes the
+original-source intermediate state (not a passing RTL simulation checkpoint).
+The next merge from `develop` reapplies the same repairs through their common
+ancestry; no existing commits are rebased, amended, dropped or rewritten.
+The platform target, original BIN/DTBOs and local notebook are untouched.
+
+The agent-only `.agents/inspect_z7020_pid_timing.tcl` retains the read-only
+checkpoint query used for the preceding discussion. On the existing
+`26ca855` build it reports a worst setup slack of -2.506 ns to PID registers
+(ADC data register to PID held-P path), with worst hold +0.069 ns for those
+destinations. Reports remain at local `TEMP/z20-pid-dac62c1d`. This additional
+finding is not a PID timing fix or evidence about the historical BIN.
