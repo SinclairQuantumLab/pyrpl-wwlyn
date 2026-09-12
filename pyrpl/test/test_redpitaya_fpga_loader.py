@@ -11,6 +11,7 @@ import pyrpl.redpitaya as redpitaya_module
 from pyrpl.attributes import FilterRegister
 from pyrpl.errors import ExpectedPyrplError
 from pyrpl.redpitaya import RedPitaya, defaultparameters
+from pyrpl.sshshell import SshShell
 
 
 class FakeScp(object):
@@ -47,6 +48,7 @@ class FakeSsh(object):
         self.legacy_load_succeeds = legacy_load_succeeds
         self.omitted_markers = set(omitted_markers)
         self.commands = []
+        self.executed_commands = []
         self.pending_output = ''
         self.scp = FakeScp()
         self.hostname = 'redpitaya.test'
@@ -76,29 +78,6 @@ class FakeSsh(object):
             if 'capabilities' not in self.omitted_markers:
                 output += '\nPYRPL_CAPABILITIES_END'
             return output
-        if 'PYRPL_PROFILE_ID:' in command:
-            output = (command + '\nPYRPL_PROFILE_ID:' + self.profile_id +
-                      '\nPYRPL_PROFILE_FPGA:' + self.profile_fpga +
-                      '\nPYRPL_PROFILE_ZYNQ:' + self.profile_zynq)
-            if 'profile' not in self.omitted_markers:
-                output += '\nPYRPL_PROFILE_END'
-            return output
-        if 'PYRPL_OVERLAY_SCRIPT_' in command:
-            assignment = (
-                'CUSTOMFPGA=/opt/$1/' + self.overlay_fpga_filename
-                if self.overlay_fpga_filename is not None else
-                'CUSTOMFPGA=$2')
-            output = command + '\n' + assignment
-            if 'overlay_script' not in self.omitted_markers:
-                output += '\nPYRPL_OVERLAY_SCRIPT_END'
-            return output
-        if 'PYRPL_PREFLIGHT_UPTIME:' in command:
-            output = (command + '\nPYRPL_PREFLIGHT_UPTIME:1234.5'
-                      '\nPYRPL_PREFLIGHT_MANAGER:' + self.manager_state +
-                      '\nPYRPL_PREFLIGHT_LOADED:' + self.loaded_info)
-            if 'preflight' not in self.omitted_markers:
-                output += '\nPYRPL_PREFLIGHT_END'
-            return output
         if 'PYRPL_OVERLAY_' in command:
             marker = ('PYRPL_OVERLAY_OK' if self.overlay_succeeds else
                       'PYRPL_OVERLAY_FAILED')
@@ -120,6 +99,39 @@ class FakeSsh(object):
                       'PYRPL_XDEVCFG_MISSING')
             return command + '\n' + marker
         return ''
+
+    def execute(self, command):
+        self.commands.append(command)
+        self.executed_commands.append(command)
+        if command.startswith(
+                "grep '^[[:space:]]*CUSTOMFPGA[[:space:]]*=' "):
+            if 'overlay_script' in self.omitted_markers:
+                raise TimeoutError('simulated non-interactive SSH timeout')
+            if self.overlay_fpga_filename is None:
+                return 1, '', ''
+            return (0,
+                    'CUSTOMFPGA=/opt/$1/' + self.overlay_fpga_filename + '\n',
+                    '')
+        if 'PYRPL_PROFILE_ID:' in command:
+            if 'profile' in self.omitted_markers:
+                raise TimeoutError('simulated non-interactive SSH timeout')
+            zynq_code = {'Z7010': '0', 'Z7020': '1'}.get(
+                self.profile_zynq)
+            output = ('PYRPL_PROFILE_ID:' + self.profile_id +
+                      '\nPYRPL_PROFILE_FPGA:' + self.profile_fpga +
+                      '\nPYRPL_PROFILE_DETAILS:\n')
+            if zynq_code is not None:
+                output += ('\t* Zynq model (rp_HPeZynqModels_t) ' +
+                           zynq_code + '\n')
+            return 0, output, ''
+        if 'PYRPL_PREFLIGHT_UPTIME:' in command:
+            if 'preflight' in self.omitted_markers:
+                raise TimeoutError('simulated non-interactive SSH timeout')
+            output = ('PYRPL_PREFLIGHT_UPTIME:1234.5'
+                      '\nPYRPL_PREFLIGHT_MANAGER:' + self.manager_state +
+                      '\nPYRPL_PREFLIGHT_LOADED:' + self.loaded_info + '\n')
+            return 0, output, ''
+        return 127, '', 'unsupported fake command'
 
 
 class ZeroMetadataClient(object):
@@ -161,6 +173,46 @@ class TestRedPitayaFpgaLoader(unittest.TestCase):
     @classmethod
     def tearDownClass(cls):
         redpitaya_module.sleep = cls._original_sleep
+
+    def test_noninteractive_ssh_command_returns_exact_streams_and_status(self):
+        class FakeChannel(object):
+            def recv_exit_status(self):
+                return 7
+
+        class FakeStream(object):
+            def __init__(self, data=b''):
+                self.data = data
+                self.channel = FakeChannel()
+
+            def close(self):
+                pass
+
+            def read(self):
+                return self.data
+
+        class FakeClient(object):
+            def __init__(self):
+                self.calls = []
+
+            def exec_command(self, command, timeout=None):
+                self.calls.append((command, timeout))
+                return (FakeStream(), FakeStream(b'output\n'),
+                        FakeStream(b'diagnostic\n'))
+
+            def close(self):
+                pass
+
+        shell = SshShell.__new__(SshShell)
+        shell._logger = logging.getLogger(__name__)
+        shell.timeout = 3
+        shell.ssh = FakeClient()
+
+        status, output, error = shell.execute('read-only-command')
+
+        self.assertEqual(7, status)
+        self.assertEqual('output\n', output)
+        self.assertEqual('diagnostic\n', error)
+        self.assertEqual([('read-only-command', 3)], shell.ssh.calls)
 
     def test_packaged_fpga_assets_are_the_fork_pair(self):
         fpga_directory = Path(redpitaya_module.__file__).parent / 'fpga'
@@ -267,6 +319,17 @@ class TestRedPitayaFpgaLoader(unittest.TestCase):
                 self.assertEqual('overlay', device.detect_platform())
                 self.assertEqual(fpga_filename,
                                  device.os2_fpga_filename)
+                overlay_probe = [
+                    command for command in device.ssh.commands
+                    if command.startswith(
+                        "grep '^[[:space:]]*CUSTOMFPGA[[:space:]]*=' ")]
+                self.assertEqual(1, len(overlay_probe))
+                self.assertNotIn('cat /opt/redpitaya/sbin/overlay.sh',
+                                 overlay_probe[0])
+                self.assertNotIn('PYRPL_OVERLAY_SCRIPT_END',
+                                 overlay_probe[0])
+                self.assertIn(overlay_probe[0],
+                              device.ssh.executed_commands)
 
         legacy = make_device(
             ecosystem_text='ecosystem version 1.04-18',
@@ -345,6 +408,13 @@ class TestRedPitayaFpgaLoader(unittest.TestCase):
                 self.assertEqual('1234.5', report['uptime_seconds'])
                 self.assertEqual('operating',
                                  report['fpga_manager_state'])
+                profile_probe = [
+                    command for command in device.ssh.executed_commands
+                    if 'PYRPL_PROFILE_ID:' in command]
+                self.assertEqual(1, len(profile_probe))
+                self.assertIn('/opt/redpitaya/bin/profiles -p',
+                              profile_probe[0])
+                self.assertNotIn('profiles -v zynq', profile_probe[0])
                 self.assertEqual([], device.ssh.scp.uploads)
                 self.assertNotIn('rw', device.ssh.commands)
                 self.assertNotIn('__PYRPL_END__', device.ssh.commands)
@@ -358,9 +428,9 @@ class TestRedPitayaFpgaLoader(unittest.TestCase):
                     'cat /opt/redpitaya/version.txt 2>/dev/null;',
                     'cat /root/.version 2>/dev/null;',
                     'if [ -x /opt/redpitaya/sbin/overlay.sh ];',
-                    'cat /opt/redpitaya/sbin/overlay.sh 2>/dev/null;',
-                    "printf '\\nPYRPL_PROFILE_ID:';",
-                    "printf '\\nPYRPL_PREFLIGHT_UPTIME:';",
+                    "grep '^[[:space:]]*CUSTOMFPGA[[:space:]]*=' ",
+                    'pyrpl_profile_status=0;',
+                    "printf 'PYRPL_PREFLIGHT_UPTIME:';",
                 )
                 self.assertTrue(all(
                     command == '' or command.startswith(allowed_prefixes)
@@ -536,7 +606,7 @@ class TestRedPitayaFpgaLoader(unittest.TestCase):
         device = make_device(omitted_markers=('preflight',))
         with self.assertRaises(ExpectedPyrplError) as raised:
             device.preflight_fpga_update()
-        self.assertIn('read-only FPGA preflight returned incomplete',
+        self.assertIn('read-only FPGA preflight SSH command failed',
                       str(raised.exception))
         self.assertEqual([], device.ssh.scp.uploads)
         self.assertNotIn('rw', device.ssh.commands)
