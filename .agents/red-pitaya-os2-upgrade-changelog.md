@@ -61,11 +61,11 @@ probes actual loader capabilities.
   writing and verifies the shell result.
 - OS 2.07+ selects `/opt/redpitaya/sbin/overlay.sh` only when that executable
   exists and its source declares a recognized fixed custom FPGA basename.
-- Version, capability, overlay-source, and hardware-profile probes require
-  terminal markers. Truncated SSH output is refused before any mutation.
-- Terminal markers emitted with `printf` keep the marker suffix outside the
-  quoted format string. This prevents literal `""` characters from appearing
-  in the output while keeping the complete marker out of the echoed command.
+- Version and capability probes require terminal markers. Truncated SSH output
+  is refused before any mutation.
+- Overlay-source, hardware-profile, and current-state probes use separate
+  non-interactive SSH command channels and verify their exit status. They do
+  not depend on an interactive terminal's command echo, prompt, or timing.
 - The overlay contract probe reads only `CUSTOMFPGA` assignments instead of
   copying the complete installed `overlay.sh` through the interactive SSH
   channel.
@@ -123,7 +123,7 @@ Current offline state on CPython 3.14.4:
 
 - DTC 1.7.2 recompilation produces both tracked DTBO hashes exactly.
 - `compileall` succeeds for `pyrpl`.
-- The loader, Python 3.14, and real-ipykernel unittest set passes 32 tests.
+- The loader, Python 3.14, and real-ipykernel unittest set passes 33 tests.
 - The safe Nose NG compatibility set passes 17 tests.
 - A wheel built from the working tree contains the exact BIN and exactly two
   matching DTS/DTBO variants plus the preflight module; all three packaged
@@ -143,6 +143,21 @@ quotes. The fake SSH tests had hidden that defect by returning the expected
 marker independently of the command. The fix makes the fake require the exact
 correct marker construction. No file was uploaded, no service was stopped,
 and the FPGA was not programmed during this attempt.
+
+Corrective commit `f3078a3` fixed the malformed marker text and limited the
+overlay read to its `CUSTOMFPGA` assignment, but the user reported the same
+timeout on a repeat field run. The follow-up correction therefore removes
+interactive-shell markers from the three OS 2-specific probes entirely and
+uses Paramiko's non-interactive command channel. This second correction has
+passed offline regression tests but still awaits a repeat field run.
+
+Red Pitaya's current official reprogramming documentation labels the complete
+custom `overlay.sh` workflow as OS `2.07-43` or newer. The test board reports
+`2.07-3`, so a successful non-interactive read may legitimately establish that
+the installed script predates the recognized custom-FPGA contract. In that
+case the expected result is an immediate, explicit unsupported-contract
+diagnostic rather than a timeout; supporting that older image would be a
+separate loader path.
 
 A repeat read-only preflight with the fix is still required. Controlled live
 loading also remains separately gated and requires explicit authorization and

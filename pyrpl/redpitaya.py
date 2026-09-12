@@ -469,16 +469,22 @@ class RedPitaya(object):
         """Return the fixed custom FPGA basename used by OS 2 overlay.sh."""
         command = (
             "grep '^[[:space:]]*CUSTOMFPGA[[:space:]]*=' "
-            '/opt/redpitaya/sbin/overlay.sh 2>/dev/null; '
-            "printf '\\nPYRPL_OVERLAY_SCRIPT_%s\\n' END")
-        result = self.ssh.ask(command)
-        result = self._wait_for_output_marker(
-            result, 'PYRPL_OVERLAY_SCRIPT_END')
-        self.overlay_script = result
-        if 'PYRPL_OVERLAY_SCRIPT_END' not in result:
+            '/opt/redpitaya/sbin/overlay.sh 2>/dev/null')
+        try:
+            status, result, error = self.ssh.execute(command)
+        except (OSError, SSHException, socket.timeout) as exception:
+            self.overlay_script = ''
             self.logger.warning(
-                'Timed out while reading /opt/redpitaya/sbin/overlay.sh; '
-                'refusing to load.')
+                'Could not read /opt/redpitaya/sbin/overlay.sh through a '
+                'non-interactive SSH command (%s); refusing to load.',
+                exception)
+            return None
+        self.overlay_script = result
+        if status not in (0, 1):
+            self.logger.warning(
+                'Could not inspect /opt/redpitaya/sbin/overlay.sh '
+                '(remote status %s: %s); refusing to load.',
+                status, error.strip() or 'no diagnostic output')
             return None
         matches = re.findall(
             r'(?m)^[ \t]*CUSTOMFPGA[ \t]*=[ \t]*["\']?'
@@ -519,16 +525,18 @@ class RedPitaya(object):
 
     def _read_os2_hardware_profile(self):
         command = (
-            "printf '\\nPYRPL_PROFILE_ID:'; "
+            "printf 'PYRPL_PROFILE_ID:'; "
             '/opt/redpitaya/bin/profiles -i 2>/dev/null; '
             "printf '\\nPYRPL_PROFILE_FPGA:'; "
             '/opt/redpitaya/bin/profiles -f 2>/dev/null; '
             "printf '\\nPYRPL_PROFILE_ZYNQ:'; "
             '/opt/redpitaya/bin/profiles -v zynq 2>/dev/null; '
-            "printf '\\nPYRPL_PROFILE_%s\\n' END")
-        result = self.ssh.ask(command)
-        result = self._wait_for_output_marker(result, 'PYRPL_PROFILE_END')
-        complete = 'PYRPL_PROFILE_END' in result
+            "printf '\\n'")
+        try:
+            status, result, error = self.ssh.execute(command)
+        except (OSError, SSHException, socket.timeout) as exception:
+            status, result, error = 1, '', str(exception)
+        complete = status == 0
 
         def last_match(pattern):
             matches = re.findall(pattern, result, flags=re.IGNORECASE)
@@ -540,7 +548,7 @@ class RedPitaya(object):
                 r'PYRPL_PROFILE_FPGA:([A-Za-z0-9_.-]+)'),
             'zynq': last_match(r'PYRPL_PROFILE_ZYNQ:(Z70(?:10|20))'),
             'complete': complete,
-            'raw': result,
+            'raw': result + error,
         }
         self.hardware_profile = profile
         return profile
@@ -687,22 +695,26 @@ class RedPitaya(object):
         }
 
     def _read_fpga_preflight_state(self):
-        """Read current board state with a terminal marker and no mutation."""
+        """Read current board state through a non-interactive SSH command."""
         command = (
-            "printf '\\nPYRPL_PREFLIGHT_UPTIME:'; "
+            "printf 'PYRPL_PREFLIGHT_UPTIME:'; "
             "cut -d ' ' -f 1 /proc/uptime 2>/dev/null; "
             "printf '\\nPYRPL_PREFLIGHT_MANAGER:'; "
             'cat /sys/class/fpga_manager/fpga0/state 2>/dev/null; '
             "printf '\\nPYRPL_PREFLIGHT_LOADED:'; "
             'cat /tmp/loaded_fpga.inf 2>/dev/null; '
-            "printf '\\nPYRPL_PREFLIGHT_%s\\n' END")
-        result = self.ssh.ask(command)
-        result = self._wait_for_output_marker(
-            result, 'PYRPL_PREFLIGHT_END')
-        if 'PYRPL_PREFLIGHT_END' not in result:
+            "printf '\\n'")
+        try:
+            status, result, error = self.ssh.execute(command)
+        except (OSError, SSHException, socket.timeout) as exception:
             raise ExpectedPyrplError(
-                'The read-only FPGA preflight returned incomplete SSH '
-                'output; refusing to continue.')
+                'The read-only FPGA preflight SSH command failed; refusing '
+                'to continue: %s' % exception)
+        if status != 0:
+            raise ExpectedPyrplError(
+                'The read-only FPGA preflight command returned status %s; '
+                'refusing to continue: %s' %
+                (status, error.strip() or 'no diagnostic output'))
 
         def last_match(pattern):
             matches = re.findall(pattern, result, flags=re.IGNORECASE)
