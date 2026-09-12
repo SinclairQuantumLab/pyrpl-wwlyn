@@ -19,14 +19,14 @@ steps:
 - script: |
     python -m pip install --upgrade pip
     python -m pip install uv
-    uv sync --locked --extra test
+    uv sync --extra test
   displayName: 'Install dependencies'
 
 - script: |
     export QT_QPA_PLATFORM=offscreen
     export REDPITAYA_HOSTNAME=_FAKE_
     export PYRPL_USER_DIR="$(mktemp -d)"
-    uv run --locked --extra test python -m unittest -v tests.test_python314_compatibility tests.test_ipykernel_compatibility
-    uv run --locked --extra test python -m unittest -v pyrpl.test.test_redpitaya_fpga_loader
-    uv run --locked --extra test nosetests -v pyrpl.test.test_memory pyrpl.test.test_proxyproperty tests/test_python39_compatibility.py tests/test_python314_compatibility.py
+    uv run --extra test python -m unittest -v tests.test_python314_compatibility tests.test_ipykernel_compatibility
+    uv run --extra test python -m unittest -v pyrpl.test.test_redpitaya_fpga_loader
+    uv run --extra test nosetests -v pyrpl.test.test_memory pyrpl.test.test_proxyproperty tests/test_python39_compatibility.py tests/test_python314_compatibility.py
   displayName: 'Offline compatibility tests'

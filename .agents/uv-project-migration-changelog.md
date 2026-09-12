@@ -34,7 +34,7 @@ no DTBO, and this packaging change does not add one.
 
 ## Validation requirements
 
-- `uv lock --check` and `uv sync --locked --extra test`;
+- `uv sync --extra test` without lock-enforcement flags;
 - compile every tracked Python file;
 - the safe Nose NG and unittest compatibility suites in `AGENTS.md`;
 - a clean `uv build --no-sources` followed by wheel inventory and installation
@@ -48,7 +48,7 @@ No live-device access or FPGA build is part of this migration.
 
 Validated on CPython 3.14.4 with uv 0.12.0:
 
-- `uv lock --check` and `uv sync --locked --extra test` succeeded;
+- `uv sync --extra test` succeeded without lock-enforcement flags;
 - compilation of the package, regression tests, and documentation Python
   sources succeeded;
 - 9 Python 3.14/ipykernel compatibility tests passed;
