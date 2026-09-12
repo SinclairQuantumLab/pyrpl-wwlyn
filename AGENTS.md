@@ -53,9 +53,19 @@
   to redesign PID/filter logic, add latency or lower clocks. Establish its
   cause and scope first. Common source fixes do not authorize rebuilding or
   replacing the original BIN or advancing commissioned compatibility mains.
-- Keep subsequent work isolated on the common fix topic. Do not merge it
-  into `develop` or any device/OS root until the user explicitly requests it.
-  The earlier merges through `2703645`/`ef7f1c1` remain historical checkpoints.
+- Each compatibility root has its own normal integration flow:
+  `<root>/feature/*`, `<root>/fix/*`, `<root>/refactor/*` ->
+  `<root>/develop` -> `<root>/main`. A root's develop is a development
+  integration line, not a commissioned release. Preserve existing topic
+  branches and history; do not collapse unrelated topics by renaming them all.
+- The user now authorizes applying the shared PID/filter repairs to
+  `<root>/fix/pid-rtl-shadowing` for the four existing roots, based on each
+  root's develop. Seed root develops from their latest applicable main or
+  development candidate. Keep the fix topics separate after validation;
+  merging the new repairs into root develops/mains needs a further request.
+- For this isolated rollout merge the common fix topic directly into each
+  root fix topic, retaining shared ancestry. Global `develop` is not advanced
+  by this rollout. Do not import another root's platform or loader changes.
 
 ## FPGA and device safety
 
