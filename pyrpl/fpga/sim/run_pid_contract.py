@@ -15,7 +15,10 @@ def run(vivado_bin=None, output_root=None):
     sources = [fpga / 'rtl' / name for name in (
         'red_pitaya_lpf_block.v', 'red_pitaya_filter_block.v',
         'red_pitaya_pid_block.v')]
-    sources.append(fpga / 'sim' / 'tb_pid_contract.sv')
+    rtl_sources = sources.copy()
+    benches = [fpga / 'sim' / name for name in (
+        'tb_filter_contract.sv', 'tb_pid_contract.sv')]
+    sources.extend(benches)
     tools = {}
     for name in ('xvlog', 'xelab', 'xsim'):
         executable = (str(Path(vivado_bin) / (name + ('.bat' if os.name == 'nt' else '')))
@@ -30,8 +33,8 @@ def run(vivado_bin=None, output_root=None):
     env = os.environ.copy()
     env['XILINX_VIVADO'] = str(Path(tools['xvlog']).parent.parent)
     commands = [
-        [tools['xvlog'], *map(str, sources[:-1])],
-        [tools['xvlog'], '--sv', str(sources[-1])],
+        [tools['xvlog'], *map(str, rtl_sources)],
+        [tools['xvlog'], '--sv', *map(str, benches)],
         [tools['xelab'], 'work.tb_pid_contract', '-s', 'pid_contract', '-debug', 'typical'],
         [tools['xsim'], 'pid_contract', '-runall'],
     ]

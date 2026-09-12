@@ -17,6 +17,11 @@
   declaration visibility and the default DERIVATIVE=0 shadowed D-input fix.
   Record their evidence in `.agents/common-pid-rtl-fix-changelog.md`.
   This is not authorization for PID/filter redesign or a replacement BIN.
+- Common implementation review continues on `fix/pid-rtl-shadowing` using
+  the original Z7010 RTL lineage. Characterize enabled filters and repair
+  demonstrated implementation issues without changing arithmetic or latency.
+  OS loader differences are not part of this work; timing evidence must name
+  its FPGA target and must not be generalized from Z7020 to Z7010.
 
 ## Branching
 
@@ -42,6 +47,9 @@
   to redesign PID/filter logic, add latency or lower clocks. Establish its
   cause and scope first. Common source fixes do not authorize rebuilding or
   replacing the original BIN or advancing commissioned compatibility mains.
+- Keep subsequent work isolated on the common fix topic. Do not merge it
+  into `develop` or any device/OS root until the user explicitly requests it.
+  The earlier merges through `2703645`/`ef7f1c1` remain historical checkpoints.
 
 ## FPGA and device safety
 
@@ -96,6 +104,11 @@
 
 ## Configuration and notebooks
 
+- The common branch still tracks its historical `test.ipynb`, unlike the
+  newer compatibility candidates. The user's local notebook was preserved
+  byte-for-byte during the branch switch and therefore appears modified.
+  Never stage, restore, execute or overwrite that local file as part of this
+  RTL task. Notebook tracking/template migration is a separate change.
 - `test.ipynb` is the user-facing manual/live-device acceptance workflow and
   the tracked record of live-device experiments. Put steps that a user is
   expected to run there, make every mutating step explicit, and never store a

@@ -34,6 +34,10 @@ represented as a commissioned `main`.
 
 ## Propagation
 
+Current hold: the user requested keeping further common implementation fixes
+on `fix/pid-rtl-shadowing`. Do not merge these into `develop` or any device/OS
+root until explicitly requested. Earlier merges remain unchanged.
+
 Apply a common change at the earliest applicable common line and merge it
 forward:
 
