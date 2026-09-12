@@ -420,8 +420,9 @@ class RedPitaya(object):
     def _read_os2_overlay_contract(self):
         """Return the fixed custom FPGA basename used by OS 2 overlay.sh."""
         command = (
-            'cat /opt/redpitaya/sbin/overlay.sh 2>/dev/null; '
-            "printf '\nPYRPL_OVERLAY_SCRIPT_\"\"END\n'")
+            "grep '^[[:space:]]*CUSTOMFPGA[[:space:]]*=' "
+            '/opt/redpitaya/sbin/overlay.sh 2>/dev/null; '
+            "printf '\\nPYRPL_OVERLAY_SCRIPT_%s\\n' END")
         result = self.ssh.ask(command)
         result = self._wait_for_output_marker(
             result, 'PYRPL_OVERLAY_SCRIPT_END')
@@ -476,7 +477,7 @@ class RedPitaya(object):
             '/opt/redpitaya/bin/profiles -f 2>/dev/null; '
             "printf '\\nPYRPL_PROFILE_ZYNQ:'; "
             '/opt/redpitaya/bin/profiles -v zynq 2>/dev/null; '
-            "printf '\\nPYRPL_PROFILE_\"\"END\\n'")
+            "printf '\\nPYRPL_PROFILE_%s\\n' END")
         result = self.ssh.ask(command)
         result = self._wait_for_output_marker(result, 'PYRPL_PROFILE_END')
         complete = 'PYRPL_PROFILE_END' in result
@@ -630,7 +631,7 @@ class RedPitaya(object):
             'cat /sys/class/fpga_manager/fpga0/state 2>/dev/null; '
             "printf '\\nPYRPL_PREFLIGHT_LOADED:'; "
             'cat /tmp/loaded_fpga.inf 2>/dev/null; '
-            "printf '\\nPYRPL_PREFLIGHT_\"\"END\\n'")
+            "printf '\\nPYRPL_PREFLIGHT_%s\\n' END")
         result = self.ssh.ask(command)
         result = self._wait_for_output_marker(
             result, 'PYRPL_PREFLIGHT_END')

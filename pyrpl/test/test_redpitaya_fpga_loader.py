@@ -80,23 +80,27 @@ class FakeSsh(object):
             output = (command + '\nPYRPL_PROFILE_ID:' + self.profile_id +
                       '\nPYRPL_PROFILE_FPGA:' + self.profile_fpga +
                       '\nPYRPL_PROFILE_ZYNQ:' + self.profile_zynq)
-            if 'profile' not in self.omitted_markers:
+            if ('profile' not in self.omitted_markers and
+                    "printf '\\nPYRPL_PROFILE_%s\\n' END" in command):
                 output += '\nPYRPL_PROFILE_END'
             return output
-        if 'PYRPL_OVERLAY_SCRIPT_' in command:
+        if command.startswith(
+                "grep '^[[:space:]]*CUSTOMFPGA[[:space:]]*=' "):
             assignment = (
                 'CUSTOMFPGA=/opt/$1/' + self.overlay_fpga_filename
                 if self.overlay_fpga_filename is not None else
                 'CUSTOMFPGA=$2')
             output = command + '\n' + assignment
-            if 'overlay_script' not in self.omitted_markers:
+            if ('overlay_script' not in self.omitted_markers and
+                    "printf '\\nPYRPL_OVERLAY_SCRIPT_%s\\n' END" in command):
                 output += '\nPYRPL_OVERLAY_SCRIPT_END'
             return output
         if 'PYRPL_PREFLIGHT_UPTIME:' in command:
             output = (command + '\nPYRPL_PREFLIGHT_UPTIME:1234.5'
                       '\nPYRPL_PREFLIGHT_MANAGER:' + self.manager_state +
                       '\nPYRPL_PREFLIGHT_LOADED:' + self.loaded_info)
-            if 'preflight' not in self.omitted_markers:
+            if ('preflight' not in self.omitted_markers and
+                    "printf '\\nPYRPL_PREFLIGHT_%s\\n' END" in command):
                 output += '\nPYRPL_PREFLIGHT_END'
             return output
         if 'PYRPL_OVERLAY_' in command:
@@ -267,6 +271,18 @@ class TestRedPitayaFpgaLoader(unittest.TestCase):
                 self.assertEqual('overlay', device.detect_platform())
                 self.assertEqual(fpga_filename,
                                  device.os2_fpga_filename)
+                overlay_probe = [
+                    command for command in device.ssh.commands
+                    if command.startswith(
+                        "grep '^[[:space:]]*CUSTOMFPGA[[:space:]]*=' ")]
+                self.assertEqual(1, len(overlay_probe))
+                self.assertNotIn('cat /opt/redpitaya/sbin/overlay.sh',
+                                 overlay_probe[0])
+                self.assertNotIn('PYRPL_OVERLAY_SCRIPT_END',
+                                 overlay_probe[0])
+                self.assertIn(
+                    "printf '\\nPYRPL_OVERLAY_SCRIPT_%s\\n' END",
+                    overlay_probe[0])
 
         legacy = make_device(
             ecosystem_text='ecosystem version 1.04-18',
@@ -354,7 +370,7 @@ class TestRedPitayaFpgaLoader(unittest.TestCase):
                     'cat /opt/redpitaya/version.txt 2>/dev/null;',
                     'cat /root/.version 2>/dev/null;',
                     'if [ -x /opt/redpitaya/sbin/overlay.sh ];',
-                    'cat /opt/redpitaya/sbin/overlay.sh 2>/dev/null;',
+                    "grep '^[[:space:]]*CUSTOMFPGA[[:space:]]*=' ",
                     "printf '\\nPYRPL_PROFILE_ID:';",
                     "printf '\\nPYRPL_PREFLIGHT_UPTIME:';",
                 )
