@@ -159,24 +159,26 @@ enum in `profiles -p`; its profile API defines enum value `0` as `Z7010` and
 value `1` as `Z7020`. The probe now parses that official output and includes a
 general regression for the official profile output and Zynq mapping. The
 observed OS `2.07-3`, profile `2`, `z10_125` result remains field evidence, not
-a version-specific support rule. This correction still awaits a repeat field
-run.
+a version-specific support rule. The user subsequently reported that the
+corrected read-only preflight completed successfully on this board.
 
 Red Pitaya's current official reprogramming documentation labels the complete
 custom `overlay.sh` workflow as OS `2.07-43` or newer. The test board reports
-`2.07-3`, so a successful non-interactive read may legitimately establish that
-the installed script predates the recognized custom-FPGA contract. In that
-case the expected result is an immediate, explicit unsupported-contract
-diagnostic rather than a timeout; supporting that older image would be a
-separate loader path.
+`2.07-3` but exposes the recognized fixed `fpga.bit.bin` custom-FPGA contract.
+The implementation therefore continues to gate on the installed script's
+observed capabilities and hardware profile rather than adding a special case
+for this exact OS build.
 
-A repeat read-only preflight with the fix is still required. Controlled live
-loading also remains separately gated and requires explicit authorization and
-the board booted from recoverable OS media. To cover OS 2.07+ rather than one
-release, validate at least one `fpga.bit.bin` OS 2 image and one newer
-`fpga.bin` OS 2 image. Before loading, collect the reported OS, detected
-overlay contract, profile ID, FPGA path, Zynq type, and uptime. Then require
-all of the following:
+The read-only preflight gate has passed. Controlled live loading remains
+separately gated and requires explicit authorization and the board booted from
+recoverable OS media. The user-facing guarded workflow now lives in
+`test.ipynb`, with each user action preceded by a short Markdown explanation;
+the redundant ignored `tests/simple_connection_test.py` was removed together
+with its tracked template. To cover OS 2.07+ rather than one release, validate
+at least one
+`fpga.bit.bin` OS 2 image and one newer `fpga.bin` OS 2 image. Before loading,
+collect the reported OS, detected overlay contract, profile ID, FPGA path,
+Zynq type, and uptime. Then require all of the following:
 
 ```powershell
 python -m pyrpl.redpitaya_preflight rp-xxxxxx.local
