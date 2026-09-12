@@ -1,7 +1,8 @@
 # Red Pitaya OS 2 upgrade implementation
 
 Branch: `gen1-os2/feature/os-upgrade` (originally developed on
-`develop/red-pitaya-upgrade`)
+`develop/red-pitaya-upgrade`); field fixes are developed below it on
+`gen1-os2/fix/preflight-markers`.
 
 Baseline: `c535358` (`Upgrade the fork to Python 3.14`)
 
@@ -62,6 +63,12 @@ probes actual loader capabilities.
   exists and its source declares a recognized fixed custom FPGA basename.
 - Version, capability, overlay-source, and hardware-profile probes require
   terminal markers. Truncated SSH output is refused before any mutation.
+- Terminal markers emitted with `printf` keep the marker suffix outside the
+  quoted format string. This prevents literal `""` characters from appearing
+  in the output while keeping the complete marker out of the echoed command.
+- The overlay contract probe reads only `CUSTOMFPGA` assignments instead of
+  copying the complete installed `overlay.sh` through the interactive SSH
+  channel.
 - Early OS 2 and OS 3 stop with an actionable unsupported-loader error.
 - Historical `fpga.bit.bin` and newer `fpga.bin` OS 2 contracts are supported.
   The loader inspects the installed script rather than inferring the contract
@@ -124,14 +131,26 @@ Current offline state on CPython 3.14.4:
 - That wheel installs into a new Python 3.14 environment outside the source
   tree, where all 23 loader tests pass and the preflight command is available.
 
-## Live validation still required
+## Live validation status
 
-No physical Red Pitaya has been contacted or programmed by this implementation
-work. Controlled live tests need separate explicit authorization and the board
-booted from recoverable OS media. To cover OS 2.07+ rather than one release,
-validate at least one `fpga.bit.bin` OS 2 image and one newer `fpga.bin` OS 2
-image. Before loading, collect the reported OS, detected overlay contract,
-profile ID, FPGA path, Zynq type, and uptime. Then require all of the following:
+On 2026-09-11, the user ran the read-only preflight against a board at
+`192.168.50.155`. It successfully established SSH, read Red Pitaya OS
+`2.07-3` from `/opt/redpitaya/version.txt`, and established that the installed
+`overlay.sh` is executable. The overlay-contract read then timed out without
+reaching the profile gate. Investigation found that the three `printf`-based
+terminal probes emitted a literal `""` where the Python side expected no
+quotes. The fake SSH tests had hidden that defect by returning the expected
+marker independently of the command. The fix makes the fake require the exact
+correct marker construction. No file was uploaded, no service was stopped,
+and the FPGA was not programmed during this attempt.
+
+A repeat read-only preflight with the fix is still required. Controlled live
+loading also remains separately gated and requires explicit authorization and
+the board booted from recoverable OS media. To cover OS 2.07+ rather than one
+release, validate at least one `fpga.bit.bin` OS 2 image and one newer
+`fpga.bin` OS 2 image. Before loading, collect the reported OS, detected
+overlay contract, profile ID, FPGA path, Zynq type, and uptime. Then require
+all of the following:
 
 ```powershell
 python -m pyrpl.redpitaya_preflight rp-xxxxxx.local
