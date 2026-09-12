@@ -88,6 +88,19 @@ class SshShell(object):
     def ask(self, question=""):
         return self.askraw(question + '\n')
 
+    def execute(self, command):
+        """Run one command without a PTY and return status, stdout, stderr."""
+        stdin, stdout, stderr = self.ssh.exec_command(
+            command, timeout=self.timeout)
+        stdin.close()
+        output = stdout.read().decode('utf-8', errors='replace')
+        error = stderr.read().decode('utf-8', errors='replace')
+        status = stdout.channel.recv_exit_status()
+        self._logger.debug(
+            'SSH command exited with status %s: %s\nstdout: %s\nstderr: %s',
+            status, command, output, error)
+        return status, output, error
+
     def __del__(self):
         self.endapp()
         try:
