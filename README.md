@@ -121,9 +121,9 @@ SSH result. Its JSON report identifies the exact board variant and marks Gen 2
 field validation as pending. Run it only when live read-only access to the
 named board is intended.
 
-For a step-by-step Z7010 Gen 2 field test, copy `test.ipynb.template` to a new
-`.ipynb` filename and edit its hostname. The template has no saved output or
-password; `test.ipynb` retains the earlier experiment record.
+For a step-by-step Z7010 Gen 2 field test, copy `test.ipynb.template` to
+`test.ipynb` and edit its hostname. The template is versioned; `test.ipynb` is an
+ignored local working copy where you can keep your settings and results.
 
 First, hook up your Red Pitaya / STEMlab to a LAN accessible from your computer (follow the instructions for this on redpitya.com and make sure you can access your Red Pitaya with a web browser by typing its ip-address /  hostname into the address bar).
 In a command line terminal, type
