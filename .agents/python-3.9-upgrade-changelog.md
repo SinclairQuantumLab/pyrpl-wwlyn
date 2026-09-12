@@ -16,8 +16,9 @@ The authoritative author-fork baseline is:
 
 The aggregate revert's tree is byte-for-byte identical to the baseline tree.
 The Python 3.9 upgrade commit is its direct child. Consequently,
-`git show HEAD` on `develop/python-upgrade` displays the effective upgrade
-from the original fork rather than mixing it with the reverted experiments.
+`git show d3a2405` displays the effective upgrade from the original fork
+rather than mixing it with the reverted experiments. The development line is
+now named `refactor/python-upgrade` (formerly `develop/python-upgrade`).
 
 ## Goals
 

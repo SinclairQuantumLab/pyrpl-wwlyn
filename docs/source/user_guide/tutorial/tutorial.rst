@@ -53,11 +53,9 @@ For all beta-testers and developers, this is the preferred option. So
 the typical PYTHONPATH environment variable should look somewhat like
 this: :math:`\texttt{PYTHONPATH=C:\OTHER_MODULE;C:\GITHUB\PYRPL}`
 
-If you are experiencing problems with the dependencies on other python
-packages, executing the following command in the pyrpl directory might
-help:
+Create the locked development environment from the repository root with:
 
-:math:`\texttt{python setup.py install develop}`
+:math:`\texttt{uv sync --extra test}`
 
 If at a later point, you have the impression that updates from github
 are not reflected in the program's behavior, try this:
@@ -72,8 +70,8 @@ you might have an older version of pyrpl installed. Just delete any such
 directories other than your principal github clone and everything should
 work.
 
-Option 2: from GitHub using setuptools (beta version)
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Option 2: from GitHub using uv (beta version)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Download the code manually from
 https://github.com/lneuhaus/pyrpl/archive/master.zip and unzip it or get
@@ -81,10 +79,9 @@ it directly from git by typing
 
 :math:`\texttt{git clone https://github.com/lneuhaus/pyrpl.git YOUR_DESTINATIONFOLDER}`
 
-In a command line shell, navigate into your new local pyrplockbox
-directory and execute
+In a command line shell, navigate into the repository root and execute
 
-:math:`\texttt{python setup.py install}`
+:math:`\texttt{uv sync}`
 
 This copies the files into the side-package directory of python. The
 setup should make sure that you have the python libraries paramiko
@@ -113,7 +110,7 @@ The software comes with a precompiled version of the server application
 automatically when you start the connection. If you made changes to this
 file, you can recompile it by typing
 
-:math:`\texttt{python setup.py compile_server}`
+:math:`\texttt{make -C pyrpl/pyrpl_server clean all}`
 
 For this to work, you must have gcc and the cross-compiling libraries
 installed. Basically, if you can compile any of the official RedPitaya
@@ -173,7 +170,7 @@ type
 
 :math:`\texttt{export REDPITAYA=192.168.1.100}` (in linux)
 
-:math:`\texttt{python setup.py nosetests}`
+:math:`\texttt{uv run --extra test nosetests}`
 
 The first command tells the test at which IP address it can find a
 RedPitaya. The last command runs the actual test. After a few seconds,
