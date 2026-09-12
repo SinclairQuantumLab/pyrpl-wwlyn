@@ -123,7 +123,7 @@ Current offline state on CPython 3.14.4:
 
 - DTC 1.7.2 recompilation produces both tracked DTBO hashes exactly.
 - `compileall` succeeds for `pyrpl`.
-- The loader, Python 3.14, and real-ipykernel unittest set passes 34 tests.
+- The loader, Python 3.14, and real-ipykernel unittest set passes 33 tests.
 - The safe Nose NG compatibility set passes 17 tests.
 - A wheel built from the working tree contains the exact BIN and exactly two
   matching DTS/DTBO variants plus the preflight module; all three packaged
@@ -157,8 +157,10 @@ the nonexistent `profiles -v zynq` option, another assumption hidden by the
 fake SSH response. Red Pitaya's official profile tool instead exposes the Zynq
 enum in `profiles -p`; its profile API defines enum value `0` as `Z7010` and
 value `1` as `Z7020`. The probe now parses that official output and includes a
-field regression for the observed OS `2.07-3`, profile `2`, `z10_125`, Z7010
-combination. This correction still awaits a repeat field run.
+general regression for the official profile output and Zynq mapping. The
+observed OS `2.07-3`, profile `2`, `z10_125` result remains field evidence, not
+a version-specific support rule. This correction still awaits a repeat field
+run.
 
 Red Pitaya's current official reprogramming documentation labels the complete
 custom `overlay.sh` workflow as OS `2.07-43` or newer. The test board reports
