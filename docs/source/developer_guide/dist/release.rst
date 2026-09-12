@@ -9,7 +9,7 @@ First, we install a bunch of programs::
 
     conda create -y -n py34 python=3.4 numpy scipy paramiko pandas nose pip pyqt qtpy
     activate py34
-    python setup.py develop
+    uv sync --extra test
     pip install pyinstaller
 
 Then, for the actual build::
@@ -21,8 +21,7 @@ Then, for the actual build::
     pandoc --from=markdown --to=rst --output=README.rst README.md
 
     # Next, we must build the distributions (we provide source and binary):
-    python setup.py sdist
-    python setup.py bdist_wheel --universal
+    uv build
 
     # Last, make a windows executable file
     pyinstaller pyrpl.spec

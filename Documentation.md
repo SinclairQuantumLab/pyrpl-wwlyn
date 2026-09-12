@@ -68,7 +68,7 @@ I use the branch `max_hold_no_iir_improvement` with lock/hold function:
 conda create --name my-env python=3.14
 conda activate my-env
 git clone -b max_hold_no_iir_improvement https://github.com/pyrpl-fpga/pyrpl.git
-cd the_folder_name # Where setup.py exists
+cd the_folder_name # Repository root containing pyproject.toml
 # conda install netifaces # I use miniconda to manage virtual environment
 pip install .  # Use virtual environment recommended
 pip install pyqt5
@@ -87,7 +87,7 @@ If you only want to use PyRPL that I have modified, please follow this to downlo
 conda create --name my-env python=3.14
 conda activate my-env
 git clone -b max_hold_no_iir_improvement https://github.com/wwlyn/pyrpl_change.git
-cd the_folder_name # Where setup.py exists
+cd the_folder_name # Repository root containing pyproject.toml
 # conda install netifaces
 pip install .  # Use virtual environment recommended
 # Fix any import errors according to error messages when importing PyRPL
@@ -417,8 +417,8 @@ PyRPL installation causes package conflicts. Two approaches:
 
 #### Dependency compatibility in **Python 3.14**
 
-Install this checkout with `uv pip install --python .venv\\Scripts\\python.exe
--e ".[test]"` or create the environment from `pyrpl.yml`. The Python 3.14
+Install this checkout with `uv sync --extra test` or create the environment
+from `pyrpl.yml`. The Python 3.14
 compatibility code uses supported NumPy 2 APIs and an in-tree finite-difference
 calculation instead of the removed `scipy.misc.derivative`. Do not add aliases
 to the NumPy module at runtime; that can conceal an incompatible environment.

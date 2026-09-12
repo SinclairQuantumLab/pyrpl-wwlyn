@@ -9,10 +9,27 @@
   evidence in a separate, non-rewriting commit and in
   `.agents/python-3.14-upgrade-changelog.md`.
 - Preserve the author's behavior. The Python 3.14 upgrade is complete; the
-  `develop/red-pitaya-upgrade` branch separately adds Red Pitaya OS 2.07+
+  `gen1-os2/feature/os-upgrade` branch separately adds Red Pitaya OS 2.07+
   loader/device-tree integration for the author's original Z7010 board.
 - Do not import implementation changes or FPGA assets from current official
   PyRPL merely because they are newer.
+
+## Branching
+
+- `develop` is the integration branch for changes that apply across device/OS
+  combinations. Common work uses standard topic namespaces such as
+  `feature/*`, `fix/*`, and `refactor/*` and is merged into `develop`.
+- Device- or OS-specific work belongs under its target compatibility root,
+  for example `gen1-os2/feature/os-upgrade` or
+  `gen2-os2/fix/device-profile`.
+- A compatibility root's `main` branch means that combination is considered
+  commissionable. Do not create or advance it based only on offline evidence
+  when its field gate is still open.
+- Propagate common changes from `develop` into compatibility branches with
+  merge commits. Use `git cherry-pick -x` only for an intentionally selective
+  backport that must not import the source branch's other changes.
+- Do not rebase published compatibility `main` branches or rewrite validation
+  history.
 
 ## FPGA and device safety
 
@@ -47,12 +64,12 @@
 
 ## Validation
 
-- Target CPython `3.14.*`; keep `.python-version`, `setup.py`, and `pyrpl.yml`
-  aligned.
-- `setup.py` remains the dependency and package-metadata source of truth;
-  `pyproject.toml` selects the setuptools build backend. This branch does not
-  use a generated dependency lockfile.
-- Preserve the tested major-version bounds in `setup.py`: NumPy
+- Target CPython `3.14.*`; keep `.python-version`, `pyproject.toml`,
+  `uv.lock`, and `pyrpl.yml` aligned.
+- `pyproject.toml` is the dependency and package-metadata source of truth and
+  uses the uv build backend. Keep the generated universal `uv.lock` tracked;
+  update it with uv rather than editing it manually.
+- Preserve the tested major-version bounds in `pyproject.toml`: NumPy
   `>=2.3.2,<3`, SciPy `>=1.16.1,<2`, lmfit `>=1.3.4,<2`, Paramiko `>=4,<6`,
   PyQt5 `>=5.15.11,<6`, and pyqtgraph `>=0.14,<1`.
 - Quamash is replaced by `qasync>=0.28,<0.29`. qasync 0.28 does not claim
@@ -66,9 +83,8 @@
   `pyrpl.test.test_memory`, `pyrpl.test.test_proxyproperty`, and
   the root `tests/test_*compatibility.py` regressions; do not run the full
   hardware-oriented suite by default.
-- Create or replace the local environment with
-  `uv venv --clear --python 3.14 --seed .venv` and
-  install with `uv pip install --python .venv/Scripts/python.exe -e ".[test]"`.
+- Create or update the local environment with `uv sync --extra test`. Use
+  `uv run --locked --extra test ...` for the validated commands.
 - Before handoff, compile all Python files, install from a fresh Python 3.14
   environment, inspect the wheel, and verify the fork bitstream hash.
 - OS-loader changes must also pass

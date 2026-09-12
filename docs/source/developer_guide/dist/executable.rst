@@ -7,7 +7,7 @@ In the pyrpl root dir:
 
     conda create -y -n py34 python=3.4 numpy scipy paramiko pandas nose pip pyqt qtpy
     activate py34
-    python setup.py develop
+    uv sync --extra test
     pip install pyinstaller
     pyinstaller --clean --onefile --distpath dist -n pyrpl ./scripts/run_pyrpl.py
 

@@ -77,5 +77,5 @@ If you do not want to install git on your computer, just download and extract th
 
 Install PyRPL by navigating with the command line terminal (the one where the pyrpl-env environment is active in case you are using anaconda) into the pyrpl root directory and typing::
 
-    python setup.py develop
+    python -m pip install --editable .
 

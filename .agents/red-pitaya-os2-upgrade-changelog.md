@@ -1,6 +1,7 @@
 # Red Pitaya OS 2 upgrade implementation
 
-Branch: `develop/red-pitaya-upgrade`
+Branch: `gen1-os2/feature/os-upgrade` (originally developed on
+`develop/red-pitaya-upgrade`)
 
 Baseline: `c535358` (`Upgrade the fork to Python 3.14`)
 

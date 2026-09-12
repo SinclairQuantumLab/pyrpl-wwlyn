@@ -1,7 +1,4 @@
-# Python package
-# Create and test a Python package on multiple Python versions.
-# Add steps that analyze code, save the dist with the build record, publish to a PyPI-compatible index, and more:
-# https://docs.microsoft.com/azure/devops/pipelines/languages/python
+# Offline CPython 3.14 compatibility checks for the uv-managed project.
 
 trigger:
 - master
@@ -10,14 +7,8 @@ pool:
   vmImage: 'ubuntu-latest'
 strategy:
   matrix:
-    Python27:
-      python.version: '2.7'
-    Python35:
-      python.version: '3.5'
-    Python36:
-      python.version: '3.6'
-    Python37:
-      python.version: '3.7'
+    Python314:
+      python.version: '3.14'
 
 steps:
 - task: UsePythonVersion@0
@@ -27,10 +18,15 @@ steps:
 
 - script: |
     python -m pip install --upgrade pip
-    pip install -r requirements.txt
+    python -m pip install uv
+    uv sync --locked --extra test
   displayName: 'Install dependencies'
 
 - script: |
-    pip install pytest pytest-azurepipelines
-    pytest
-  displayName: 'pytest'
+    export QT_QPA_PLATFORM=offscreen
+    export REDPITAYA_HOSTNAME=_FAKE_
+    export PYRPL_USER_DIR="$(mktemp -d)"
+    uv run --locked --extra test python -m unittest -v tests.test_python314_compatibility tests.test_ipykernel_compatibility
+    uv run --locked --extra test python -m unittest -v pyrpl.test.test_redpitaya_fpga_loader
+    uv run --locked --extra test nosetests -v pyrpl.test.test_memory pyrpl.test.test_proxyproperty tests/test_python39_compatibility.py tests/test_python314_compatibility.py
+  displayName: 'Offline compatibility tests'
