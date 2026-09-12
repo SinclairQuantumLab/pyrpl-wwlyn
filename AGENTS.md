@@ -13,6 +13,21 @@
   fixes.
 - Do not import implementation changes or FPGA assets from current official
   PyRPL merely because they are newer.
+- The user separately authorized common PID RTL repairs: integrator-readback
+  declaration visibility and the default DERIVATIVE=0 shadowed D-input fix.
+  Record their evidence in `.agents/common-pid-rtl-fix-changelog.md`.
+  This is not authorization for PID/filter redesign or a replacement BIN.
+- Common implementation review continues on `fix/pid-rtl-shadowing` using
+  the original Z7010 RTL lineage. Characterize enabled filters and repair
+  demonstrated implementation issues without changing arithmetic or latency.
+  OS loader differences are not part of this work; timing evidence must name
+  its FPGA target and must not be generalized from Z7020 to Z7010.
+- The user clarified the timing baseline: investigate and repair the original
+  Gen 1 / Z7010 / OS 1 configuration first. Later OS/device adaptations are
+  separate upgrade work. Do not substitute a Z7020 checkpoint or the Pro PS
+  shell for that baseline. Keep investigation evidence in
+  `.agents/common-z7010-timing-investigation.md`; source fixes remain on the
+  shared topic until explicit propagation instructions.
 
 ## Branching
 
@@ -30,6 +45,27 @@
   backport that must not import the source branch's other changes.
 - Do not rebase published compatibility `main` branches or rewrite validation
   history.
+- Classify changes by cause, not where they were discovered. Pre-existing
+  shared RTL defects belong on `fix/*` based on `develop`; board/OS/interface
+  port changes belong under the target compatibility root. Common toolchain
+  prerequisites may be separate commits on the shared topic.
+- A timing failure found during a port is a validation finding, not permission
+  to redesign PID/filter logic, add latency or lower clocks. Establish its
+  cause and scope first. Common source fixes do not authorize rebuilding or
+  replacing the original BIN or advancing commissioned compatibility mains.
+- Each compatibility root has its own normal integration flow:
+  `<root>/feature/*`, `<root>/fix/*`, `<root>/refactor/*` ->
+  `<root>/develop` -> `<root>/main`. A root's develop is a development
+  integration line, not a commissioned release. Preserve existing topic
+  branches and history; do not collapse unrelated topics by renaming them all.
+- The user now authorizes applying the shared PID/filter repairs to
+  `<root>/fix/pid-rtl-shadowing` for the four existing roots, based on each
+  root's develop. Seed root develops from their latest applicable main or
+  development candidate. Keep the fix topics separate after validation;
+  merging the new repairs into root develops/mains needs a further request.
+- For this isolated rollout merge the common fix topic directly into each
+  root fix topic, retaining shared ancestry. Global `develop` is not advanced
+  by this rollout. Do not import another root's platform or loader changes.
 
 ## FPGA and device safety
 
@@ -77,9 +113,18 @@
   operation must not depend on `--locked`, `--frozen`, or similar flags.
 - Before handoff, compile all Python files, install from a fresh Python 3.14
   environment, inspect the wheel, and verify the fork bitstream hash.
+- Shared PID RTL fixes must run `pyrpl/fpga/sim/run_pid_contract.py` against
+  the real sources with XSim; see its README. The source archive includes the
+  simulation harness, but the runtime wheel must exclude it. Behavioral
+  simulation does not establish timing closure or historical BIN equivalence.
 
 ## Configuration and notebooks
 
+- The common branch still tracks its historical `test.ipynb`, unlike the
+  newer compatibility candidates. The user's local notebook was preserved
+  byte-for-byte during the branch switch and therefore appears modified.
+  Never stage, restore, execute or overwrite that local file as part of this
+  RTL task. Notebook tracking/template migration is a separate change.
 - `test.ipynb` is the user-facing manual/live-device acceptance workflow and
   the tracked record of live-device experiments. Put steps that a user is
   expected to run there, make every mutating step explicit, and never store a
