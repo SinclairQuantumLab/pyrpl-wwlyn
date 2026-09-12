@@ -104,6 +104,9 @@
   password. It contains machine- and device-specific state and
   hardware-mutating cells. Do not run it or rewrite saved outputs unless the
   user explicitly requests notebook/device work.
+- `test.ipynb.template` is the clean Z7010 Gen 2/OS 2 starter for standard and
+  Pro profiles. Keep it free of saved outputs, device-specific addresses, and
+  passwords; copy it to a new `.ipynb` filename for a live test.
 - Keep agent-only investigation scripts and notes under `.agents/`, outside
   the package and user-facing test areas. Automated product regressions still
   belong in `pyrpl/test` or `tests`; do not confuse them with disposable agent
