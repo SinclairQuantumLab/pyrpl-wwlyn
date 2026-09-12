@@ -50,7 +50,7 @@ before_install:
 	conda install --yes -c conda-forge coveralls
 	pip install coverage codecov
 	# install pyrpl
-	python setup.py install
+	python -m pip install .
 
 script:
 	if [[ "$TRAVIS_PYTHON_VERSION" == "3.5" && "$TRAVIS_OS_NAME" == "osx" ]]; then

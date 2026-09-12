@@ -23,12 +23,12 @@ The official PyRPL website address is [http://pyrpl.readthedocs.io/](http://pyrp
 This fork targets CPython 3.14. From the repository root on Windows:
 
 ```powershell
-uv venv --clear --python 3.14 --seed .venv
-uv pip install --python .venv\Scripts\python.exe -e ".[test]"
-.\.venv\Scripts\python.exe --version  # Must report Python 3.14.x.
+uv sync --extra test
+uv run --extra test python --version  # Must report Python 3.14.x.
 ```
 
-The `test` extra includes the notebook kernel and the maintained Nose NG
+The committed `uv.lock` makes this environment reproducible. The `test` extra
+includes the notebook kernel, coverage support, and the maintained Nose NG
 runner used by the selected legacy tests.
 
 Alternatively, create the supplied Conda environment:
@@ -70,7 +70,7 @@ or [download and extract](https://github.com/lneuhaus/pyrpl/archive/master.zip) 
 
 Install PyRPL by navigating with the command line terminal (the one where the pyrpl-env environment is active in case you are using anaconda) into the pyrpl root directory and typing
 ```
-python setup.py develop
+python -m pip install --editable .
 ```
 
 ## Quick start
@@ -93,8 +93,8 @@ $env:QT_QPA_PLATFORM = "offscreen"
 $env:REDPITAYA_HOSTNAME = "_FAKE_"
 $env:PYRPL_USER_DIR = Join-Path $env:TEMP ("pyrpl-test-" + [guid]::NewGuid())
 New-Item -ItemType Directory -Path $env:PYRPL_USER_DIR | Out-Null
-.\.venv\Scripts\python.exe -m unittest -v tests\test_python314_compatibility.py tests\test_ipykernel_compatibility.py
-.\.venv\Scripts\nosetests.exe -v pyrpl.test.test_memory pyrpl.test.test_proxyproperty tests\test_python39_compatibility.py tests\test_python314_compatibility.py
+uv run --locked --extra test python -m unittest -v tests\test_python314_compatibility.py tests\test_ipykernel_compatibility.py
+uv run --locked --extra test nosetests -v pyrpl.test.test_memory pyrpl.test.test_proxyproperty tests\test_python39_compatibility.py tests\test_python314_compatibility.py
 ```
 
 The complete legacy suite includes tests that discover, contact, and mutate a
