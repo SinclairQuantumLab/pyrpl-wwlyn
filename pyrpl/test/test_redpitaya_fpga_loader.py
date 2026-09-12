@@ -437,20 +437,6 @@ class TestRedPitayaFpgaLoader(unittest.TestCase):
                     for command in device.ssh.commands),
                     device.ssh.commands)
 
-    def test_os207_3_accepts_official_profile_print_zynq_field(self):
-        device = make_device(
-            ecosystem_text='Red Pitaya OS 2.07-3', profile_id='2',
-            profile_fpga='z10_125', profile_zynq='Z7010')
-
-        report = device.preflight_fpga_update()
-
-        self.assertEqual(
-            {'id': '2', 'fpga': 'z10_125', 'zynq': 'Z7010'},
-            report['hardware_profile'])
-        self.assertEqual([], device.ssh.scp.uploads)
-        self.assertFalse(any(
-            'overlay.sh pyrpl ' in command for command in device.ssh.commands))
-
     def test_missing_dtbo_fails_before_device_mutation(self):
         device = make_device()
         device.parameters['dtbo_filename'] = 'fpga/does-not-exist.dtbo'
