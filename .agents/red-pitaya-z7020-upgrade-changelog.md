@@ -259,3 +259,31 @@ checkpoint query used for the preceding discussion. On the existing
 (ADC data register to PID held-P path), with worst hold +0.069 ns for those
 destinations. Reports remain at local `TEMP/z20-pid-dac62c1d`. This additional
 finding is not a PID timing fix or evidence about the historical BIN.
+
+### Integration result
+
+After corrective commit `188dbfe`, this merge brings in `develop` at
+`2703645` and the two independently scoped common commits. Merge conflicts
+were limited to additive agent guidance and the wheel exclusion list:
+retain both the Pro platform rules and common-fix rules, and retain both
+simulation and target-source wheel exclusions. No notebook or FPGA artifact
+conflict was present.
+
+Verification before committing the merge:
+
+- `git diff 26ca855 -- pyrpl pyproject.toml uv.lock test.ipynb.template tests`
+  is empty. The final product/build/RTL/test content is unchanged from the
+  previously validated Pro checkpoint; only shared ancestry and guidance/
+  evidence organization changed. No new timing repair or rebuild was done.
+- `uv sync --extra test` passed; 116 Python files compiled; checkout
+  unittests 59 passed, Nose NG safe subset 24 passed, and actual XSim PID
+  contract 341 passed again (`TEMP/pyrpl-pid-rtl-ntjnzpcw`).
+- A fresh Python 3.14.4 wheel installation passed dependency checks and
+  all 59 unittests, including a real ipykernel, outside the checkout.
+  The 153-entry wheel retained the exact BIN, two approved DTBOs, matching
+  DTS sources and preflight module; simulation/target sources remained
+  source-archive-only. Artifacts: `TEMP/pyrpl-split-package-aa7e5d4d`.
+- Original BIN/DTBO and ignored notebook hashes remained unchanged.
+  Existing `main`, `gen1-os1/main`, `gen1-os2/main`, standard Gen 2 candidate,
+  and the separate restored `working-vs1` worktree were not advanced/modified.
+- No live-device operation, push, rebase or amendment was performed.

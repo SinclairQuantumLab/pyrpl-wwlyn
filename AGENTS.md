@@ -24,6 +24,10 @@
   Preserve the original BIN and approved Z7010 DTBOs; any new Z7020 image must
   have a separate target, filename and provenance. Do not enable its loader
   profile merely because RTL simulation or synthesis succeeds.
+- The user separately authorized common PID RTL repairs: integrator-readback
+  declaration visibility and the default DERIVATIVE=0 shadowed D-input fix.
+  Record their evidence in `.agents/common-pid-rtl-fix-changelog.md`.
+  This is not authorization for PID/filter redesign or a replacement BIN.
 
 ## Branching
 
@@ -41,6 +45,14 @@
   backport that must not import the source branch's other changes.
 - Do not rebase published compatibility `main` branches or rewrite validation
   history.
+- Classify changes by cause, not where they were discovered. Pre-existing
+  shared RTL defects belong on `fix/*` based on `develop`; board/OS/interface
+  port changes belong under the target compatibility root. Common toolchain
+  prerequisites may be separate commits on the shared topic.
+- A timing failure found during a port is a validation finding, not permission
+  to redesign PID/filter logic, add latency or lower clocks. Establish its
+  cause and scope first. Common source fixes do not authorize rebuilding or
+  replacing the original BIN or advancing commissioned compatibility mains.
 
 ## FPGA and device safety
 
@@ -121,6 +133,10 @@
   and I/O/clock methodology gates remain open; see
   `.agents/z7020-full-build-evidence.json`. Do not interpret the tool's zero
   exit status or CDC summary as timing closure.
+- Shared PID RTL fixes must run `pyrpl/fpga/sim/run_pid_contract.py` against
+  the real sources with XSim; see its README. The source archive includes the
+  simulation harness, but the runtime wheel must exclude it. Behavioral
+  simulation does not establish timing closure or historical BIN equivalence.
 
 ## Configuration and notebooks
 
