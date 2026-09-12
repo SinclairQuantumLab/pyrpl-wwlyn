@@ -179,12 +179,14 @@ The next saved notebook cell completed `Pyrpl(...)` with
 `reloadfpga=False`, `reloadserver=True`, and a successful monitor-client
 connection and fork register-metadata check. A read of PID0's input-filter
 setting also completed. Live gate 5 is therefore met; the ASG/scope/PID,
-setpoint, and slow-analog functional gate 6 remains open. The user's current
-notebook changes remain uncommitted and include a plaintext SSH password in a
-code cell, so they must not be staged unchanged.
+setpoint, and slow-analog functional gate 6 remains open. Raw notebook settings
+and outputs remain in the user's ignored local `test.ipynb`; this log records
+the observed validation results.
 
-The user-facing workflow now lives in
-`test.ipynb`, with each user action preceded by a short Markdown explanation.
+The versioned user-facing workflow lives in `test.ipynb.template`, with each
+user action preceded by a short Markdown explanation. `test.ipynb` is the
+ignored local working copy; removing it from the index preserves the local
+file, and earlier committed experiment records remain in Git history.
 FPGA programming and monitor-server/client connection are separate cells, and
 the connection cell explicitly uses `reloadfpga=False`. The redundant ignored
 `tests/simple_connection_test.py` was removed together with its tracked
