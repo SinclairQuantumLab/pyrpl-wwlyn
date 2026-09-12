@@ -175,7 +175,14 @@ then successfully loaded the `fpga.bit.bin` overlay. The FPGA Manager reported
 `operating`, `/tmp/loaded_fpga.inf` identified the expected BIN and DTBO, and
 the board reported BIN MD5 `445d5fbae304d4ccc7bb5af30e849967`, matching the
 preserved local fork bitstream. This satisfies live gates 1 through 4 below;
-the separate monitor connection and functional gates 5 and 6 remain.
+the separate monitor connection and functional gates 5 and 6 were then checked
+separately. The next saved notebook cell completed `Pyrpl(...)` with
+`reloadfpga=False`, `reloadserver=True`, and a successful monitor-client
+connection and fork register-metadata check. A read of PID0's input-filter
+setting also completed. Live gate 5 is therefore met; the ASG/scope/PID,
+setpoint, and slow-analog functional gate 6 remains open. The user's current
+notebook changes remain uncommitted and include a plaintext SSH password in a
+code cell, so they must not be staged unchanged.
 
 The user-facing workflow now lives in
 `test.ipynb`, with each user action preceded by a short Markdown explanation.
