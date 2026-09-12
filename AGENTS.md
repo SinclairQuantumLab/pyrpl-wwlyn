@@ -114,6 +114,13 @@
   synthesis outputs in new, separate directories, never in the preserved
   legacy output tree. Z7020 implementation evidence is recorded in
   `.agents/red-pitaya-z7020-upgrade-changelog.md`.
+- The Z7020 full PS/AXI build is `pyrpl/fpga/targets/z20_gen2/build.tcl`.
+  Run `tests.test_z7020_build_contract` for source-preservation guards and
+  use a new output directory for each real Vivado build. It intentionally
+  emits reports/checkpoints only. Full routing currently completes but timing
+  and I/O/clock methodology gates remain open; see
+  `.agents/z7020-full-build-evidence.json`. Do not interpret the tool's zero
+  exit status or CDC summary as timing closure.
 
 ## Configuration and notebooks
 

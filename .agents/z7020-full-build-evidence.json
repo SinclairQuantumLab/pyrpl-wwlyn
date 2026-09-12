@@ -1,0 +1,157 @@
+{
+  "kind": "Offline full-design build, not timing closure or hardware compatibility",
+  "date": "2026-09-12",
+  "base_commit": "6e76d87",
+  "branch": "gen2-pro-os2/feature/device-upgrade",
+  "tool": "Vivado 2023.2 build 4029153",
+  "part": "xc7z020clg400-1",
+  "local_artifact_location": "Windows TEMP/z20-ce2f7712 (log is adjacent)",
+  "command": [
+    "vivado",
+    "-mode",
+    "batch",
+    "-notrace",
+    "-nojournal",
+    "-log",
+    "TEMP/z20-ce2f7712.log",
+    "-source",
+    "pyrpl/fpga/targets/z20_gen2/build.tcl",
+    "-tclargs",
+    "TEMP/z20-ce2f7712",
+    "implement"
+  ],
+  "completed": {
+    "ps_shell": true,
+    "synthesis": true,
+    "placement": true,
+    "routing": true,
+    "tool_exit_code": 0
+  },
+  "not_performed": [
+    "bitstream generation",
+    "DTBO generation",
+    "board connection or programming",
+    "full-top behavioral simulation",
+    "post-route timing simulation"
+  ],
+  "synthesized_design": {
+    "lut": 13884,
+    "flip_flop": 10090,
+    "block_ram_tiles": 34,
+    "dsp48": 36,
+    "black_boxes": 0,
+    "direct_xadc": 1
+  },
+  "routed_design": {
+    "lut": 13814,
+    "flip_flop": 10434,
+    "block_ram_tiles": 34,
+    "dsp48": 36,
+    "direct_xadc": 1,
+    "ps7": 1
+  },
+  "timing": {
+    "closed": false,
+    "setup_wns_ns": -4.369,
+    "setup_tns_ns": -5205.906,
+    "setup_failing_endpoints": 6802,
+    "hold_whs_ns": -2.362,
+    "hold_ths_ns": -64.289,
+    "hold_failing_endpoints": 28,
+    "adc_dsp_setup_failing_endpoints": 6798,
+    "pwm_setup_failing_endpoints": 4,
+    "unclocked_sequential_pins": 1,
+    "unconstrained_internal_endpoints": 2,
+    "inputs_without_delay": 16,
+    "outputs_without_delay": 46
+  },
+  "findings": {
+    "worst_setup": "IQ two-output quadrature_filter_reg[7] to modulator/secondproduct1/D[4]; 10.703 ns datapath",
+    "hold": "28 ADC input paths under retained legacy 3.4 ns delay assumption; not measured board delay",
+    "synthesis_log": {
+      "warnings": 315,
+      "critical_warnings": 0,
+      "errors": 0
+    },
+    "route_log_cumulative": {
+      "warnings": 316,
+      "critical_warnings": 0,
+      "errors": 0
+    },
+    "drc_default": {
+      "warnings": 133,
+      "errors": 0
+    },
+    "methodology": {
+      "TIMING_17_critical": 1,
+      "TIMING_15": 28,
+      "TIMING_16": 1000,
+      "TIMING_18": 56,
+      "XDCC_5": 4,
+      "XDCH_2": 28
+    },
+    "cdc": "150 endpoints classified Safely Timed, but unclocked paths and unconstrained inputs are excluded; this is not CDC/timing sign-off"
+  },
+  "regressions": {
+    "pid_xsim_checks": 341,
+    "checkout_unittest": 59,
+    "nose_ng": 24,
+    "compiled_python": 116,
+    "fresh_wheel_unittest_run": 59,
+    "fresh_wheel_unittest_skipped": 1,
+    "fresh_wheel_entries": 153
+  },
+  "source_sha256": {
+    "pyrpl/fpga/targets/z20_gen2/build.tcl": "422eaa1417be952280b664ad5c4b351b64a0e888e0fa5fc01d47be87e3aafde9",
+    "pyrpl/fpga/targets/z20_gen2/system_bd.tcl": "1480a5b09f5d843caae23d098cd5d14a8340d74d2cac57f6d7b765146c7a53f8",
+    "pyrpl/fpga/targets/z20_gen2/ps_config.tcl": "39c37f2b7c7805d8e99eb86499c8dfa0d3da0eee3ec282103d4481beff112b08",
+    "pyrpl/fpga/targets/z20_gen2/board.xdc": "a7d64d3d09ed80114eeb161f9cc4bb8a62287b2edd6973e772cd0dbe38c81998",
+    "pyrpl/fpga/rtl/axi_master.v": "e8bce81f64c2f948c375c88da74f1d9f6bb876c1e51fca9f2728a00f29751c2e",
+    "pyrpl/fpga/rtl/axi_slave.v": "d5010f4524d3a526e26cae2a4a9843fb4cdd6a8495f8ad5874bbcdcf8e1e05de",
+    "pyrpl/fpga/rtl/axi_wr_fifo.v": "943a59b5b07bc66d235d86881820def81131ff14699e3097d141bb502c2e1fc6",
+    "pyrpl/fpga/rtl/bus_clk_bridge.v": "efe43299881c3324a672d32b43840f25fe94d7021279df61bbe6d90ece064062",
+    "pyrpl/fpga/rtl/red_pitaya_ams.v": "71c9a3b06aaf3e21d83ee41c032d12fed54a702f81bead296a81d47d62df639d",
+    "pyrpl/fpga/rtl/red_pitaya_asg_ch.v": "752e8f205e4a2605b4c92cee96a5dbabbf9d08c8f383d400676eab3cf46b7b30",
+    "pyrpl/fpga/rtl/red_pitaya_asg.v": "e0ba00df69a333f916a174fed94929b2709fafae884e8d52b3265550de9ccb32",
+    "pyrpl/fpga/rtl/red_pitaya_dfilt1.v": "22845f3049ee5682a222e0d1d965dba609dbbc8aa1893eafc76af62068f83eab",
+    "pyrpl/fpga/rtl/red_pitaya_hk.v": "529266f096874244e8554e22ce81ea82a17cb4efb229a88399fedb95df58ce85",
+    "pyrpl/fpga/rtl/red_pitaya_pid_block.v": "76cb3977b3c119446ab04f6db0c6abdc4b52d2526460f56dfd717012657b86ee",
+    "pyrpl/fpga/rtl/red_pitaya_dsp.v": "f39ba446b56b6a510cd57f31666713d4bcb87bd1039d82fd7aaa311ec7967d7c",
+    "pyrpl/fpga/rtl/red_pitaya_ps.v": "5d822fc0706603787cf4647323ed560d1cc77f98763a6173d28556f790e87960",
+    "pyrpl/fpga/rtl/red_pitaya_scope.v": "814a2f23bab60c6bf79320f61a01f98e97aa942de01e099c1f9168198656eaf1",
+    "pyrpl/fpga/rtl/red_pitaya_top.v": "a23c9da5fe608513710905e9c4a4a2e0a323497bf3f78819212d087b8adc2901",
+    "pyrpl/fpga/rtl/red_pitaya_adv_trigger.v": "5c77b1ee9bb2fe66f1ffccd2390669d8fb609246d8cbfac85f068345fcdc42b6",
+    "pyrpl/fpga/rtl/red_pitaya_saturate.v": "e7f06c0691701f7da5e5278a5a75e89cd2535102193f004bad876ca5ccbc5d32",
+    "pyrpl/fpga/rtl/red_pitaya_product_sat.v": "0e1c66b97749e7865af9d963442a312420f9364a5ca76f108435809b8a5aa432",
+    "pyrpl/fpga/rtl/red_pitaya_iir_block.v": "773c1718c1f5b79e8d3d02c92b5b0387e1f7aba8b8172f38400f33d220a24185",
+    "pyrpl/fpga/rtl/red_pitaya_iq_modulator_block.v": "f15a13917168fc2eabc3e69ecd42882c4fad6d1087905b3ba887dbc75a7d2a3e",
+    "pyrpl/fpga/rtl/red_pitaya_lpf_block.v": "f149d00ec3e596b478a2bedc1d0ef0339c85215ec3d00ce162b8acf9fb05f7fd",
+    "pyrpl/fpga/rtl/red_pitaya_filter_block.v": "2b1793ac87234e8649a798e2f9e60299c74ac2fe2d4dc01a92185d64b503dd64",
+    "pyrpl/fpga/rtl/red_pitaya_iq_demodulator_block.v": "c4301b50009e2b866aa28950534d2a3ce4d55d12369b314ce5d2a5ab63f2fe08",
+    "pyrpl/fpga/rtl/red_pitaya_pfd_block.v": "1245fd9a9de15acaf584af80152d5353c192bfe953e279ee01911e9fda476c14",
+    "pyrpl/fpga/rtl/red_pitaya_iq_fgen_block.v": "bec0265e25e8a57c7c77c65909506c2146acc8f4f12f022947b2ce705476313b",
+    "pyrpl/fpga/rtl/red_pitaya_iq_block.v": "497ff32c4ada2f615e3922c8077473edd418d1dfc140a0a5938e653bccd835c4",
+    "pyrpl/fpga/rtl/red_pitaya_trigger_block.v": "ab7fea74a8e12fd4c9cc1f5d60361b39b14760aef07c93a87aa41b863de806ba",
+    "pyrpl/fpga/rtl/red_pitaya_prng.v": "bc7fa61cda58fd3b542a590cbb15b0535801270938108c5b838067ebca33fbdb",
+    "pyrpl/fpga/rtl/red_pitaya_pll.sv": "8c4dccde72298782d9f0faeef684b30b36a80acacb3a5489c77bc01616786e9b",
+    "pyrpl/fpga/rtl/red_pitaya_pwm.sv": "968b0dd99d3dcbe57c8deede57311cf22f053e677edf3fd4341114d331311c89"
+  },
+  "artifact_sha256": {
+    "post_synth.dcp": "88366c7c3f8347f38ebca390851ede8a9e5801e419811280749e92c50a776922",
+    "post_synth_utilization.rpt": "7fee81a27dbeaa73610420dcb983b7951b22988a81da636af91dfdeea07939a7",
+    "post_synth_timing.rpt": "f9224678489f8e798f82f85805b2495bd67276b5f6ff8f94e7f6482cc89c5edd",
+    "post_synth_drc.rpt": "ec3bf8de6cb4f264fd36d9520980da31e48da77f94f5cca5e36b17215e50c347",
+    "post_route.dcp": "e54465fafbda6b957009ef4f05961f317a079dc406241c750b493ec76f14a864",
+    "post_route_utilization.rpt": "041ba9c79c8531adb668389ff1a495860d42110d6d6e5de25bc828b59a9b44ca",
+    "post_route_timing.rpt": "a6457dc71477868df15d2252fbb33b92995aed247e639fb9d3ab0d77b33c2b75",
+    "post_route_drc.rpt": "d0ed238a7b72b4ceb8a5271da40e095f68dbaf4d524830db8d0a825f47da676d",
+    "post_route_cdc.rpt": "ea60098fec96d046db429b3f41aa096b6f2828156896ca6742fd4b07969e51e3",
+    "post_route_clock_interaction.rpt": "75f4f61c0f97ee43ffaed8b7eeea88ff0bcc6692abfc9ab7d2895d54ffa0e81e",
+    "post_route_methodology.rpt": "b2abb65f83f93df1807fcd9f4feff087004dd1ef9a68105ca5d24d7c099f5a15",
+    "post_route_io.rpt": "163e264aa309b77d0c38ed0ba115b5c4dc8db3aaf8d2dd02d5ecac47e38d58bf",
+    "generated_system_bd.tcl": "d9ba83531d6f00e9ff1106ec751934d474f794082dbd86a4a276bf439d0cfe75",
+    "project/z20_gen2.gen/sources_1/bd/system/hdl/system_wrapper.v": "84195722580999c361f0682124ffef6b4b3d2e1b50a8233f81a3037fb627cccb",
+    "project/z20_gen2.gen/sources_1/bd/system/hw_handoff/system.hwh": "83577c23ea9601a0701b3e5f27d33e52c18277b15706702c20f885df1d14f996",
+    "../z20-ce2f7712.log": "6575e3d0d8d0501d3ba4d8bd00bef3ed597593865706237176b315aeff79f44b"
+  }
+}
