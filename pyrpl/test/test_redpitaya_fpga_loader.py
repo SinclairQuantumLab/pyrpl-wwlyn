@@ -4,8 +4,11 @@ import hashlib
 import logging
 import os
 from pathlib import Path
+import shutil
+import subprocess
 import tempfile
 import unittest
+from unittest.mock import patch
 
 import pyrpl.redpitaya as redpitaya_module
 from pyrpl.attributes import FilterRegister
@@ -165,6 +168,19 @@ def make_device(**ssh_kwargs):
 
 
 class TestRedPitayaFpgaLoader(unittest.TestCase):
+    # Reduced, synthetic fixture following the official profiles -p format:
+    # RedPitaya/RedPitaya, rp-api/api-hw-profiles/src/common.cpp,
+    # commit 0e46d64396a57752bf97315789d6cc6c9fbddad8.
+    # This is source-derived test data, not a captured Gen 2 field result.
+    STANDARD_PROFILE_OUTPUT = (
+        'PYRPL_PROFILE_ID:20\n'
+        'PYRPL_PROFILE_FPGA:z10_125_v2\n'
+        'PYRPL_PROFILE_DETAILS:\n'
+        'Board\n'
+        '\t* Board model (rp_HPeModels_t) 20\n'
+        '\t* Zynq model (rp_HPeZynqModels_t) 0\n'
+    )
+
     @classmethod
     def setUpClass(cls):
         cls._original_sleep = redpitaya_module.sleep
@@ -529,6 +545,137 @@ class TestRedPitayaFpgaLoader(unittest.TestCase):
         self.assertEqual([], device.ssh.scp.uploads)
         self.assertNotIn('rw', device.ssh.commands)
         self.assertNotIn('__PYRPL_END__', device.ssh.commands)
+
+    def test_standard_profile_source_format_and_line_endings(self):
+        for newline in ('\n', '\r\n'):
+            with self.subTest(newline=repr(newline)):
+                device = make_device()
+                output = self.STANDARD_PROFILE_OUTPUT.replace('\n', newline)
+                with patch.object(device.ssh, 'execute',
+                                  return_value=(0, output, '')) as execute:
+                    with self.assertLogs(level='WARNING'):
+                        profile = device._validate_os2_z10_profile()
+                self.assertEqual('20', profile['id'])
+                self.assertEqual('z10_125_v2', profile['fpga'])
+                self.assertEqual('Z7010', profile['zynq'])
+                command = execute.call_args.args[0]
+                for option in ('-i', '-f', '-p'):
+                    self.assertIn('/opt/redpitaya/bin/profiles ' + option,
+                                  command)
+                self.assertNotIn('profiles -v', command)
+                self.assertEqual([], device.ssh.scp.uploads)
+
+    def test_profile_probe_shell_output_and_exit_status(self):
+        # Run the actual printf/exit composition locally, replacing only the
+        # remote executable with a shell function. No SSH or board is involved.
+        shell = shutil.which('sh')
+        if shell is None and os.name == 'nt':
+            git_bash = Path(os.environ.get('ProgramFiles', 'C:/Program Files'))
+            git_bash = git_bash / 'Git/bin/bash.exe'
+            if git_bash.is_file():
+                shell = str(git_bash)
+        if shell is None:
+            self.skipTest('POSIX shell unavailable for local command test')
+        device = make_device()
+        device._read_os2_hardware_profile()
+        command = device.ssh.executed_commands[-1].replace(
+            '/opt/redpitaya/bin/profiles', 'profiles')
+        for fail_option in ('none', '-i', '-f', '-p'):
+            with self.subTest(fail_option=fail_option):
+                script = '''
+profiles() {
+    case "$1" in
+        -i) printf '20';;
+        -f) printf 'z10_125_v2';;
+        -p) printf 'Board\\n\\t* Zynq model (rp_HPeZynqModels_t) 0\\n';;
+        *) return 64;;
+    esac
+    if [ "$1" = "$failed_option" ]; then return 7; fi
+}
+failed_option="%s"
+''' % fail_option
+                result = subprocess.run(
+                    [shell, '-c', script + command], capture_output=True,
+                    text=True, timeout=10)
+                self.assertEqual(0 if fail_option == 'none' else 7,
+                                 result.returncode, result.stderr)
+                self.assertIn('PYRPL_PROFILE_ID:20\n', result.stdout)
+                self.assertIn('PYRPL_PROFILE_FPGA:z10_125_v2\n', result.stdout)
+                with patch.object(device.ssh, 'execute', return_value=(
+                        result.returncode, result.stdout, result.stderr)):
+                    if fail_option == 'none':
+                        with self.assertLogs(level='WARNING'):
+                            device._validate_os2_z10_profile()
+                    else:
+                        with self.assertRaises(ExpectedPyrplError):
+                            device._validate_os2_z10_profile()
+
+    def test_malformed_profile_fields_are_not_accepted_as_prefixes(self):
+        replacements = (
+            ('PYRPL_PROFILE_ID:20', 'PYRPL_PROFILE_ID:20invalid'),
+            ('PYRPL_PROFILE_FPGA:z10_125_v2',
+             'PYRPL_PROFILE_FPGA:z10_125_v2/other'),
+            ('(rp_HPeZynqModels_t) 0', '(rp_HPeZynqModels_t) 01'),
+            ('(rp_HPeZynqModels_t) 0', '(rp_HPeZynqModels_t) 0invalid'),
+            ('(rp_HPeZynqModels_t) 0', '(rp_HPeZynqModels_t) 10'),
+        )
+        for before, after in replacements:
+            with self.subTest(after=after):
+                device = make_device()
+                device.detect_platform()
+                output = self.STANDARD_PROFILE_OUTPUT.replace(before, after)
+                with patch.object(device.ssh, 'execute',
+                                  return_value=(0, output, '')):
+                    with self.assertRaises(ExpectedPyrplError):
+                        device.update_fpga()
+                self.assertEqual([], device.ssh.scp.uploads)
+                self.assertNotIn('__PYRPL_END__', device.ssh.commands)
+                self.assertNotIn('rw', device.ssh.commands)
+
+    def test_duplicate_or_missing_profile_fields_are_rejected(self):
+        fields = ('PYRPL_PROFILE_ID:20\n',
+                  'PYRPL_PROFILE_FPGA:z10_125_v2\n',
+                  '\t* Zynq model (rp_HPeZynqModels_t) 0\n')
+        for field in fields:
+            for output in (self.STANDARD_PROFILE_OUTPUT + field,
+                           self.STANDARD_PROFILE_OUTPUT.replace(field, '')):
+                with self.subTest(field=field, output=output):
+                    device = make_device()
+                    device.detect_platform()
+                    with patch.object(device.ssh, 'execute',
+                                      return_value=(0, output, '')):
+                        with self.assertRaises(ExpectedPyrplError):
+                            device.update_fpga()
+                    self.assertEqual([], device.ssh.scp.uploads)
+                    self.assertNotIn('__PYRPL_END__', device.ssh.commands)
+
+    def test_profile_command_failure_rejects_otherwise_valid_output(self):
+        device = make_device()
+        device.detect_platform()
+        with patch.object(device.ssh, 'execute', return_value=(
+                1, self.STANDARD_PROFILE_OUTPUT, 'profile read failed')):
+            with self.assertRaises(ExpectedPyrplError):
+                device.update_fpga()
+        self.assertEqual([], device.ssh.scp.uploads)
+        self.assertNotIn('__PYRPL_END__', device.ssh.commands)
+
+    def test_standard_gen2_profiles_use_both_overlay_contracts(self):
+        for profile_id in ('20', '31'):
+            for filename in ('fpga.bit.bin', 'fpga.bin'):
+                with self.subTest(profile_id=profile_id, filename=filename):
+                    device = make_device(
+                        profile_id=profile_id, profile_fpga='z10_125_v2',
+                        overlay_fpga_filename=filename)
+                    with self.assertLogs(level='WARNING'):
+                        report = device.preflight_fpga_update()
+                        self.assertEqual([], device.ssh.scp.uploads)
+                        device.update_fpga()
+                    self.assertEqual('/opt/pyrpl/' + filename,
+                                     report['remote_bitstream'])
+                    self.assertEqual(
+                        [(report['local_bitstream'], report['remote_bitstream']),
+                         (report['local_dtbo'], report['remote_dtbo'])],
+                        device.ssh.scp.uploads)
 
     def test_os207_rejects_mismatched_z7010_profile_before_mutation(self):
         device = make_device(profile_id='20',

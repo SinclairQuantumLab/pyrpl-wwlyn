@@ -4,8 +4,10 @@ Candidate branches: `gen2-os2/feature/device-upgrade` and
 `gen2-pro-os2/feature/device-upgrade` (originally developed on
 `develop/red-pitaya-upgrade`)
 
-Implementation commit: `80b6291199dfb7a7d784e4c0d355c5905735621f`.
-Use that immutable candidate for the live-device gates recorded in
+Original implementation commit: `80b6291199dfb7a7d784e4c0d355c5905735621f`.
+It predates the corrected preflight probes and native uv packaging; do not
+check it out as the current live-test candidate. Continue from the standard
+candidate branch and record the tested revision as described in
 `.agents/red-pitaya-live-test-plan.md`.
 
 This upgrade is repository-side only. It did not contact, restart, or program
@@ -91,3 +93,80 @@ open.
 The clean `test.ipynb.template` separates the future user's preflight,
 programming, server connection, and initial register read. It has not been run
 against a Gen 2 device and does not change the field-validation state.
+
+## Standard Gen 2 readiness (2026-09-12)
+
+This iteration starts from `143ef23` on
+`gen2-os2/feature/device-upgrade` and targets the standard Z7010 board only.
+The Pro candidate is not advanced. A separately requested Z7020 feasibility
+assessment is read-only and does not authorize a port or a new FPGA image.
+
+- New regressions exposed permissive profile parsing: an ID such as
+  `20invalid`, a path such as `z10_125_v2/other`, or Zynq text starting with
+  `0` could be mistaken for an approved value. Duplicate fields also silently
+  selected the last value. Parsing now requires one complete field per probe.
+  There is no release/build-specific exception or change to the profile table.
+- A source-derived profile fixture is independent of the response generator.
+  A local POSIX-shell test also executes the actual command's `printf` and
+  exit-status composition, including individual subcommand failures. Its
+  stand-in executable is not presented as a real hardware profile tool.
+- New PID regressions characterize the unchanged signed 14-bit sequence
+  packing, 16-slot length, scalar/sequence rounding distinction, software
+  trigger/reset addresses, signed readback, and gain/integrator bounds.
+- The template now provides ASG/ADC measurement, internal proportional/hold/
+  integrator tests, 16-step sequence/wrap readback, physical TTL observations,
+  slow-input readings, cleanup, and reconnect steps. It keeps programming and
+  server connection separate and introduces no confirmation-token cell.
+- Template regressions check clean notebook structure, Python syntax, the
+  separation of device operations, and the scope helper using synthetic data.
+  The source distribution now includes the template alongside these tests.
+
+The preserved RTL ties PID0/1/2 hold to DIO0_P/1_P/2_P and setpoint advance to
+DIO3_P/4_P/5_P (`red_pitaya_dsp.v`, PID instances). PID gain width is 30 and
+the sequence contains 16 signed 14-bit words (`red_pitaya_pid_block.v`). These
+are source/API contracts, not new field measurements. Neither the BIN, either
+DTBO, nor the PID/RTL implementation is changed by this readiness work.
+
+Closed-loop behavior, physical TTL timing, slow outputs, long-duration/GUI
+operation and Gen 2 analog scaling remain live measurements. The template's
+local FFT is not a validation of PyRPL's spectrum-analyzer module. No Gen 2
+device has been contacted or programmed during this work.
+
+### Validation of this readiness iteration
+
+On CPython 3.14.4, with offscreen Qt, temporary user directories and the fake
+hostname:
+
+- Plain `uv sync --extra test` succeeded; dependency declarations and
+  `uv.lock` remained unchanged (only the source-archive include list changed).
+- Loader unittests: 32 passed, including the locally executed POSIX-shell
+  probe test; PID contract tests: 7 passed; template tests: 5 passed.
+- Python 3.14 and real-ipykernel regressions: 9 passed.
+- Selected Nose NG memory/proxy/Python 3.9/Python 3.14/PID regressions:
+  24 passed. Some overlap the unittest run; these are not 24 additional
+  distinct cases.
+- All 114 tracked/unignored Python source files compiled, with SyntaxWarning
+  promoted to an error.
+- `uv build --no-sources` built the source archive and a wheel from it.
+  The wheel contained 153 entries, including the exact original BIN, exactly
+  the two approved DTBOs, byte-identical DTS sources, and the preflight module.
+  The source archive contained the clean template and its regression test,
+  but not the local `test.ipynb`.
+- Installation of the wheel with its test extra into a fresh CPython 3.14.4
+  environment passed `uv pip check`. All 32 installed loader tests and the
+  21 Python/runtime/PID/template tests passed against that installed package
+  from outside the checkout, including a real ipykernel.
+- `git diff --check` passed. Original BIN/DTBO hashes and the ignored local
+  notebook hash were unchanged. No compatibility main or Pro branch moved.
+
+qasync still has the previously recorded Python 3.16 deprecation warning.
+This does not fail the Python 3.14 tests. The local ipykernel test also emits
+its TCP transport warning; it does not connect to a Red Pitaya.
+
+The user-requested parallel assessment is recorded separately in
+`red-pitaya-z7020-feasibility.md`. It changes neither this target's hardware
+scope nor the preserved FPGA artifacts.
+
+The user requested committing this offline checkpoint and deferring physical
+Gen 2 testing to a later session. The pending measurements remain in
+`red-pitaya-live-test-plan.md`; this checkpoint does not promote a Gen 2 main.
