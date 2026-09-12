@@ -128,9 +128,9 @@ $env:QT_QPA_PLATFORM = "offscreen"
 $env:REDPITAYA_HOSTNAME = "_FAKE_"
 $env:PYRPL_USER_DIR = Join-Path $env:TEMP ("pyrpl-test-" + [guid]::NewGuid())
 New-Item -ItemType Directory -Path $env:PYRPL_USER_DIR | Out-Null
-uv run --locked --extra test python -m unittest -v tests\test_python314_compatibility.py tests\test_ipykernel_compatibility.py
-uv run --locked --extra test python -m unittest -v pyrpl.test.test_redpitaya_fpga_loader
-uv run --locked --extra test nosetests -v pyrpl.test.test_memory pyrpl.test.test_proxyproperty tests\test_python39_compatibility.py tests\test_python314_compatibility.py
+uv run --extra test python -m unittest -v tests\test_python314_compatibility.py tests\test_ipykernel_compatibility.py
+uv run --extra test python -m unittest -v pyrpl.test.test_redpitaya_fpga_loader
+uv run --extra test nosetests -v pyrpl.test.test_memory pyrpl.test.test_proxyproperty tests\test_python39_compatibility.py tests\test_python314_compatibility.py
 ```
 
 The complete legacy suite includes tests that discover, contact, and mutate a

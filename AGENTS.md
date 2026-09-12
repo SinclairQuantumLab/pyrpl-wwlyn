@@ -84,7 +84,8 @@
   the root `tests/test_*compatibility.py` regressions; do not run the full
   hardware-oriented suite by default.
 - Create or update the local environment with `uv sync --extra test`. Use
-  `uv run --locked --extra test ...` for the validated commands.
+  `uv run --extra test ...` for the validated commands; normal project
+  operation must not depend on `--locked`, `--frozen`, or similar flags.
 - Before handoff, compile all Python files, install from a fresh Python 3.14
   environment, inspect the wheel, and verify the fork bitstream hash.
 - OS-loader changes must also pass
