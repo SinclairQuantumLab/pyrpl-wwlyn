@@ -86,6 +86,7 @@ source-include = [
     "pyrpl.spec",
     "pyrpl.yml",
     "setup.cfg",
+    "test.ipynb.template",
     "tests/**",
 ]
 wheel-exclude = [

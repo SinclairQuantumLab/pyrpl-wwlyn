@@ -1,168 +1,124 @@
 # Red Pitaya live-test plan
 
-This is the device-ready acceptance plan for the preservation-first Python,
-OS-loader, and Z7010 Gen 2 upgrades. No step in this document authorizes board
-access by itself. Each session still requires explicit live-device approval.
+Updated 2026-09-12 for the standard Z7010 Gen 2 candidate. This is a plan,
+not permission for an agent to contact or program a board.
 
-## Commit map
+## Current candidates and historical checkpoints
 
-| Test gate | Candidate commit | Hardware and OS | Status |
-| --- | --- | --- | --- |
-| Known-good comparison | `407a9d1` | Original STEMlab 125-14 Z7010, OS `1.04-18`, CPython 3.9 | Already field-tested; retain as the comparison and recovery point |
-| Python 3.14 acceptance | `c535358` | Original STEMlab 125-14 Z7010, OS `1.04-18` | Pending |
-| OS 2, `fpga.bit.bin` contract | `ddb1077` | Original STEMlab 125-14 Z7010, OS 2.07+ whose installed `overlay.sh` fixes `/opt/pyrpl/fpga.bit.bin` | Pending |
-| OS 2, `fpga.bin` contract | `ddb1077` | Original STEMlab 125-14 Z7010, OS 2.07+ whose installed `overlay.sh` fixes `/opt/pyrpl/fpga.bin` | Pending |
-| Final-branch original-board regression | `80b6291199dfb7a7d784e4c0d355c5905735621f` | Original STEMlab 125-14 Z7010, one of the OS 2 images accepted above | Pending device |
-| Standard Gen 2 acceptance | `80b6291199dfb7a7d784e4c0d355c5905735621f` | STEMlab 125-14 Gen 2 Z7010, profile 20 or 31 with `z10_125_v2`, OS 2.07+ | Pending device |
-| Pro Gen 2 acceptance | `80b6291199dfb7a7d784e4c0d355c5905735621f` | STEMlab 125-14 Pro Gen 2 Z7010, profile 21 or 32 with `z10_125_pro_v2`, OS 2.07+ | Pending device; required before claiming Pro support |
-| Unsupported-board refusal | `80b6291199dfb7a7d784e4c0d355c5905735621f` | Z7020 or TI-based Gen 2 board | Optional read-only safety test; never attempt an FPGA load |
+| Target | Branch / historical commit | Evidence and next step |
+| --- | --- | --- |
+| Author-board Python 3.9 baseline | `407a9d1`, original Z7010, OS 1.04-18 | Field-tested comparison point; no OS downgrade is required for this work |
+| Python 3.14 implementation | `c535358` | Historical Python upgrade checkpoint, not the current OS 2 test checkout |
+| Original-board OS 2 | `gen1-os2/main`, promoted and subsequently updated through `efa5a00` | OS 2.07-3 FPGA loading and PyRPL connection passed; analog/control measurements remain separate |
+| Standard Gen 2, OS 2 | `gen2-os2/feature/device-upgrade`, readiness work starts from `143ef23` | Current candidate; loader, functional, and analog field measurements pending |
+| Pro / Z7020 | Separate candidate / feasibility assessment | Not part of the active standard Gen 2 field session |
 
-`ddb1077` is the test checkout for the committed original-board OS 2 work. It
-contains the loader introduced by `10f0e68`, support for both known fixed
-firmware basenames added by `7aa600e`, and the read-only preflight added by
-`ddb1077`.
+Implementation commits `10f0e68`, `7aa600e`, `ddb1077`, and `80b6291`
+are historical references. They predate fixes found during the original-board
+OS 2 field test. Do not check them out as the current test candidate.
 
-The Gen 2 gates belong to implementation commit
-`80b6291199dfb7a7d784e4c0d355c5905735621f`, not to a later working-tree
-snapshot. Use a separate worktree at that exact commit when attaching hardware.
+Record the actual tested commit and any working-tree differences at each
+session. A new worktree is optional, not a required extra copy of the project.
+Do not overwrite another worker's files or switch a dirty checkout blindly.
+Later evidence belongs in a new commit; do not rewrite previous validation.
 
-## Required order
+## Prepare the local environment and notebook
 
-1. Test `c535358` on the already-known original Z7010 and OS `1.04-18`. This
-   isolates Python 3.14 from all OS 2 and Gen 2 changes.
-2. Test `ddb1077` on an original Z7010 with each available OS 2 overlay
-   contract. Both contracts are required if both device images can be made
-   available.
-3. Test `80b6291` on an original Z7010 running an already-passed
-   OS 2 image. This catches regressions introduced by widening the profile
-   table.
-4. Test `80b6291` on a standard Z7010 Gen 2 board.
-5. Test `80b6291` separately on a Pro Z7010 Gen 2 board before claiming the Pro
-   profiles field-validated.
+Run `uv sync --extra test` and the offline commands in `AGENTS.md` on the
+candidate. Copy `test.ipynb.template` to `test.ipynb` only if the local
+notebook does not already exist. Otherwise transfer the desired new cells
+without replacing saved experiments. The template is tracked; the local
+notebook and its device-specific results are ignored.
 
-A pass at a later gate does not retroactively replace an earlier isolation
-gate. In particular, a Gen 2 pass does not prove the author's original-board
-behavior was preserved.
+Use the notebook's brief Markdown explanations and run one step at a time:
 
-## Prepare each session
+1. Set the hostname and confirm that the intended checkout supplies PyRPL.
+2. Run read-only preflight. This opens SSH but does not program the FPGA.
+3. Program the FPGA in its own cell.
+4. Connect the monitor server/PyRPL in a separate cell.
+5. Read the fork register metadata, then proceed to the bench measurements.
 
-- Use a separate Git worktree at the exact candidate commit. Do not switch the
-  main development tree while it contains uncommitted work.
-- Build a fresh CPython 3.14 environment using the commands in `AGENTS.md` and
-  run the required offline tests before allowing that worktree to contact a
-  board.
-- Confirm that `pyrpl/fpga/red_pitaya.bin` has SHA-256
-  `dc6e71fb04d3a5a67731a5ddb99e7f80395a1c2fee2b8ae59168ce4252cee9ed`.
-  For OS 2 also confirm both approved DTBO hashes from `AGENTS.md`.
-- Record the board label, Zynq part, ecosystem release, profile ID, profile
-  FPGA path, installed `overlay.sh` hash/content, Python version, candidate
-  commit, loading configuration, cabling, termination, and test-equipment
-  calibration. Do not commit passwords or machine-specific PyRPL config.
-- Use a recoverable SD-card image, keep console/recovery access available,
-  disconnect experimental actuators, and begin with Red Pitaya outputs
-  disconnected. Use a passive loopback or dummy load for the functional test.
+The packaged alternative to step 2 is
+`uv run python -m pyrpl.redpitaya_preflight HOSTNAME`. User-run acceptance
+steps belong in the notebook, not in agent-only live scripts.
 
-For the legacy `1.04-18` load, positively establish that the board is the
-original STEMlab 125-14 Z7010 and that `/dev/xdevcfg` is a character device.
-The ecosystem version must come from `/opt/redpitaya/version.txt` (version
-`1.04`, build `18`), not only `/root/.version`.
+Before loading, identify the actual board and wiring. The active target is
+standard STEMlab 125-14 Gen 2, Z7010, profile 20 or 31, path `z10_125_v2`,
+OS major 2 release 2.07 or later. Record the ecosystem release, profile,
+installed overlay contract, candidate revision, Python version, local asset
+hashes, cabling, termination, and measurement equipment. Never save passwords.
 
-For OS 2, first run the packaged read-only command:
+Keep experimental actuators disconnected and begin with a passive loopback
+or dummy load. The template clears direct fast-output routes before driving
+its selected output. Connecting PyRPL can apply saved configuration; it is
+not a read-only operation even when FPGA reload is disabled.
 
-```powershell
-.venv\Scripts\python.exe -m pyrpl.redpitaya_preflight HOSTNAME
-```
+## Loader and connection acceptance
 
-The preflight still contacts the device and therefore needs explicit approval.
-It must report an exact allowed profile/path pair, Z7010, OS 2.07+, an approved
-local BIN and matching DTBO, and one of the two recognized fixed overlay
-basenames. A preflight refusal ends the session; do not bypass it.
+The preflight must identify one of the installed overlay's supported fixed
+basenames, `fpga.bit.bin` or `fpga.bin`. It selects the corresponding
+approved DTBO, not an overlay chosen from an OS build-number exception.
 
-## Mutating loader acceptance
+A successful load and connection requires:
 
-Only after the preparation and preflight gates pass, make one explicitly
-authorized connection with `reloadfpga=True` and `reloadserver=True`. Use a
-small sanitized test program or scratch notebook; do not run or rewrite the
-tracked `test.ipynb` as a general-purpose acceptance harness.
+- approved original BIN and matching DTBO hashes before upload;
+- successful overlay command and FPGA Manager state `operating`;
+- expected image identity in `/tmp/loaded_fpga.inf` and retained loader logs;
+- monitor connection and positive register metadata;
+- disconnect/reconnect without FPGA reprogramming.
 
-An OS 2 loader pass requires all of the following:
+The source contract additionally expects PID PSR/ISR/gain width 12/32/30.
+Positive generic register metadata alone is not an analog or fork-feature
+measurement. Preserve diagnostics after failure; do not substitute another
+bitstream, bypass refusal, or automatically retry programming.
 
-1. Upload begins only after the local BIN and selected DTBO hashes pass.
-2. The selected DTBO `firmware-name` matches the basename fixed inside the
-   device's installed `overlay.sh`.
-3. The overlay command succeeds without an SSH loss or board reboot.
-4. FPGA Manager reports `operating`.
-5. `/tmp/update_fpga.txt` reports success and `/tmp/loaded_fpga.inf` identifies
-   the expected fork image.
-6. The monitor client connects and the fork-specific register metadata check
-   is positive.
-7. A clean disconnect/reconnect with both reload flags false succeeds.
+An installed `fpga.bin` contract needs its own live evidence when a device
+with that contract is available. Do not edit a board's `overlay.sh` just to
+manufacture another test configuration.
 
-Preserve the staged files and diagnostics if any condition fails. Do not
-automatically retry a failed overlay or loader operation.
+## Functional measurements
 
-## Functional acceptance sequence
+The expanded template provides a starting bench sequence:
 
-Run the same low-energy sequence on the original OS 1 reference, the original
-OS 2 targets, and each Gen 2 target so the results can be compared directly.
+| Notebook step | What to observe |
+| --- | --- |
+| ASG and ADC loopback | Low-amplitude 1 kHz tone; measure frequency, amplitude, offset, polarity, and ADC scale |
+| Internal scope / FFT | Compare the ADC trace with the internal ASG reference; the local FFT is not a PyRPL spectrum-analyzer test |
+| Proportional / hold / integrator | Internal PID routing, retained output during pause, release, saturation and recovery |
+| 16-step sequence | Signed values, indices 0 through 15, manual advance, and wrap readback |
+| External TTL | PID0 hold on DIO0_P and sequence advance on DIO3_P; common ground and 3.3 V logic |
+| Slow inputs | Read the fork's direct-XADC channels; this does not exercise slow outputs |
+| Cleanup and reconnect | End acquisition, clear test output routes, and reconnect without another FPGA load |
 
-1. **Basic access:** read identification/register metadata and acquire an idle
-   scope trace without exceptions, zero-bandwidth metadata, or obvious clock
-   errors.
-2. **ASG and fast I/O:** generate a low-amplitude 1 kHz sine into a known-safe
-   loopback/load; measure frequency, amplitude, offset, polarity, clipping,
-   and scope scaling with calibrated external equipment.
-3. **Spectrum:** acquire the same signal and confirm the fundamental frequency
-   and amplitude are consistent with the time-domain measurement.
-4. **PID/filter path:** use only a passive electrical loop or dummy plant;
-   verify small-signal routing, setpoint, sign, gain, saturation, and recovery.
-5. **Fork-specific behavior:** exercise the author's triggered-setpoint path
-   and confirm timing, trigger polarity, resulting setpoint, and register
-   readback against the original-board result.
-6. **Slow analog:** test each used slow input/output channel at conservative
-   levels and compare offset, gain, polarity, and settling.
-7. **Runtime integration:** after the one successful load, verify headless
-   script operation, a PyQt/qasync GUI connect-and-close cycle, and a fresh
-   Python 3.14 ipykernel connect-and-close cycle with reload disabled.
-8. **Stability:** operate the passive test setup for at least 30 minutes, then
-   disconnect and reconnect without reprogramming; record exceptions,
-   disconnects, and drift.
+Repeat fast-I/O measurements on both used channels and record whether the load
+is high impedance or 50 ohms. Gen 2 nominal output full scale differs with
+load (+/-2 V high impedance, +/-1 V into 50 ohms). Do not silently change
+PyRPL normalization to compensate for an unmeasured load.
 
-For Gen 2, record whether OUT1/OUT2 is high impedance or 50 ohms. Measure the
-actual DAC full scale and commanded amplitude/offset relationship in both load
-conditions that are available. The expected hardware limits are approximately
-`+/-2 V` into high impedance and `+/-1 V` into 50 ohms. Do not change PyRPL's
-normalization to hide a load-dependent difference. Also verify ADC scaling and
-slow analog independently instead of inferring them from a successful load.
+Additional measurements are still needed for the intended application:
 
-## Immediate stop conditions
+- calibrated ADC/DAC amplitude and offset over the operating range;
+- PyRPL spectrum-analyzer operation, separately from the local FFT;
+- the used filters and a passive/dummy-plant closed loop, including sign,
+  latency, saturation, recovery, and stability;
+- external TTL polarity, edge timing, hold transient, and maximum intended
+  sequence rate (a manual software pulse does not measure these);
+- used slow outputs, with correct PWM routing and measured voltage;
+- GUI/qasync and a fresh ipykernel connect/close cycle without reprogramming;
+- at least 30 minutes of operation, followed by reconnect, logging exceptions,
+  disconnects and drift.
 
-Stop without retrying or trying a different asset if any of these occurs:
+Compare the fork-specific behavior with the existing original-board reference
+where measurements are available. Do not claim equivalence solely from source
+inspection, a loader pass, or absence of Python exceptions.
 
-- profile ID, FPGA path, Zynq part, OS version, overlay basename, or local hash
-  is missing or mismatched;
-- the board is Z7020, TI-based, 4-input, a slave variant, or otherwise outside
-  the exact allowed Z7010 profiles;
-- `/dev/xdevcfg` is not a character device during a legacy test;
-- SSH disappears, uptime resets, the overlay reports failure, FPGA Manager is
-  not `operating`, or loaded-image identity is not the fork image;
-- fork register metadata fails, measured clocks/frequencies are inconsistent,
-  or an output exceeds the planned safe voltage;
-- a test would require an FPGA rebuild, a different DTBO, or bypassing a
-  preflight refusal.
+## Record results and promotion
 
-After a stop, collect only read-only diagnostics until the failure is reviewed.
+Save device-specific raw outputs in the local notebook or other local logs.
+Add a sanitized summary, tested revision, hashes, setup, measurements and
+remaining limitations to `.agents/red-pitaya-gen2-upgrade-changelog.md` in
+a new evidence commit.
 
-## Evidence commits after live tests
-
-Keep raw device-specific logs outside Git. Add sanitized measurements,
-versions, hashes, cabling/termination, and pass/fail evidence to the applicable
-upgrade changelog in a new non-rewriting commit. Suggested commit subjects are:
-
-- `Document Python 3.14 legacy-board field validation`
-- `Document original-board OS 2 field validation`
-- `Document Z7010 Gen 2 field validation`
-
-If standard and Pro Gen 2 are tested on different dates, use separate evidence
-commits and do not mark the untested family field-validated. Never amend an
-already-shared implementation commit merely to add later bench evidence.
+Do not advance/create `gen2-os2/main` from this offline readiness work.
+Promotion follows the agreed field results. This does not reopen or undo the
+user's existing `gen1-os2/main` promotion.

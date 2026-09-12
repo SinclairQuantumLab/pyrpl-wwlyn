@@ -124,6 +124,13 @@ named board is intended.
 For a step-by-step Z7010 Gen 2 field test, copy `test.ipynb.template` to
 `test.ipynb` and edit its hostname. The template is versioned; `test.ipynb` is an
 ignored local working copy where you can keep your settings and results.
+Do not overwrite an existing notebook to update it. Current development targets
+the standard Z7010 Gen 2; the separate Pro candidate is not being advanced.
+The template separates preflight, FPGA programming, and server connection,
+then provides ASG/ADC, PID hold/integrator, 16-step setpoint/TTL, slow-input,
+cleanup, and reconnect steps. Calibrated analog measurements, closed-loop
+behavior, physical TTL timing, slow outputs, and sustained/GUI operation still
+need bench validation. Its local FFT is not a spectrum-analyzer module test.
 
 First, hook up your Red Pitaya / STEMlab to a LAN accessible from your computer (follow the instructions for this on redpitya.com and make sure you can access your Red Pitaya with a web browser by typing its ip-address /  hostname into the address bar).
 In a command line terminal, type
@@ -146,6 +153,7 @@ $env:PYRPL_USER_DIR = Join-Path $env:TEMP ("pyrpl-test-" + [guid]::NewGuid())
 New-Item -ItemType Directory -Path $env:PYRPL_USER_DIR | Out-Null
 uv run --extra test python -m unittest -v tests\test_python314_compatibility.py tests\test_ipykernel_compatibility.py
 uv run --extra test python -m unittest -v pyrpl.test.test_redpitaya_fpga_loader
+uv run --extra test python -m unittest -v tests\test_fork_pid_compatibility.py tests\test_gen2_manual_workflow.py
 uv run --extra test nosetests -v pyrpl.test.test_memory pyrpl.test.test_proxyproperty tests\test_python39_compatibility.py tests\test_python314_compatibility.py
 ```
 

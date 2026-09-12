@@ -542,16 +542,22 @@ class RedPitaya(object):
             status, result, error = 1, '', str(exception)
         complete = status == 0
 
-        def last_match(pattern):
-            matches = re.findall(pattern, result, flags=re.IGNORECASE)
-            return matches[-1] if matches else None
+        def single_match(pattern):
+            matches = re.findall(
+                pattern, result, flags=re.IGNORECASE | re.MULTILINE)
+            return matches[0] if len(matches) == 1 else None
 
-        zynq_code = last_match(
-            r'Zynq model\s*\([^)]*\)\s*([01])')
+        # Match whole fields, not an allowed prefix of a different/garbled
+        # value. Each probe requests one profile, so duplicate fields are
+        # ambiguous rather than a reason to trust the last match.
+        zynq_code = single_match(
+            r'^[ \t]*\*?[ \t]*Zynq model[ \t]*\([^\r\n)]*\)'
+            r'[ \t]+([0-9]+)[ \t]*\r?$')
         profile = {
-            'id': last_match(r'PYRPL_PROFILE_ID:([0-9]+)'),
-            'fpga': last_match(
-                r'PYRPL_PROFILE_FPGA:([A-Za-z0-9_.-]+)'),
+            'id': single_match(
+                r'^PYRPL_PROFILE_ID:[ \t]*([0-9]+)[ \t]*\r?$'),
+            'fpga': single_match(
+                r'^PYRPL_PROFILE_FPGA:[ \t]*([A-Za-z0-9_.-]+)[ \t]*\r?$'),
             'zynq': {'0': 'Z7010', '1': 'Z7020'}.get(zynq_code),
             'complete': complete,
             'raw': result + error,

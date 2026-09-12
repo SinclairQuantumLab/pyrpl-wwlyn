@@ -16,6 +16,10 @@
   the exact Z7010 Gen 2 profile families.
 - Do not import implementation changes or FPGA assets from current official
   PyRPL merely because they are newer.
+- Current implementation work targets the standard Z7010 Gen 2 on OS 2 only.
+  Preserve the existing Pro candidate without advancing it. A separate agent
+  may assess Z7020 feasibility read-only at the user's request; that is not
+  authorization to change FPGA assets or implement the Z7020 port.
 
 ## Branching
 
@@ -95,6 +99,10 @@
   `python -m unittest pyrpl.test.test_redpitaya_fpga_loader`. The wheel must
   contain the exact fork BIN plus both source-identical firmware-name DTS/DTBO
   variants, `pyrpl/redpitaya_preflight.py`, and no other DTBO.
+- Standard Gen 2 readiness also runs `tests/test_fork_pid_compatibility.py`
+  and `tests/test_gen2_manual_workflow.py` with unittest. These characterize
+  Python register writes and validate the clean template without executing
+  its device cells. They do not prove FPGA or analog behavior.
 
 ## Configuration and notebooks
 
