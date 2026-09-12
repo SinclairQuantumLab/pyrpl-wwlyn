@@ -358,7 +358,7 @@ assign int_shr = $signed(int_reg[IBW-1:ISR]) ;
 wire signed [    39-1: 0] kd_mult       ;
 reg signed  [39-DSR-1: 0] kd_reg        ;
 reg signed  [39-DSR-1: 0] kd_reg_r      ;
-reg signed  [39-DSR  : 0] kd_reg_s      ;
+wire signed [39-DSR  : 0] kd_reg_s      ;
 
 generate 
 	if (DERIVATIVE == 1) begin
@@ -381,7 +381,8 @@ generate
         assign kd_mult = (pause_d==1'b1) ? $signed({15+GAINBITS-1{1'b0}}) : $signed(error) * $signed(set_kd);
 	end
 	else begin
-		wire [15+GAINBITS-DSR:0] kd_reg_s;
+		// Drive the sum's D input; a local wire here shadows it and leaves
+		// the default DERIVATIVE=0 PID output unknown in RTL simulation.
 		assign kd_reg_s = {15+GAINBITS-DSR+1{1'b0}};
 	end
 endgenerate 

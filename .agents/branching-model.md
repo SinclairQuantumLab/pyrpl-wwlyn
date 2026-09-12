@@ -46,6 +46,18 @@ Use `git cherry-pick -x` only when a deliberately isolated backport is needed
 and merging would import unrelated or incompatible changes. Never rebase a
 published compatibility `main` or rewrite its validation history.
 
+## Classification of port findings
+
+Discovery during a device upgrade does not make a change device-specific.
+Existing shared RTL defects use a `fix/*` topic from `develop`; toolchain
+compatibility prerequisites can be isolated commits on that topic. Changes
+required by board, OS or interface differences stay under that device root.
+
+Keep timing findings unclassified until their causes are established. A port
+does not authorize PID/filter redesign, extra latency or lowered clocks.
+Merging a shared source repair does not authorize a new packaged BIN or
+automatic promotion of any compatibility main.
+
 ## Imported history
 
 The existing commits through `c8355a5` predate this naming model and remain
