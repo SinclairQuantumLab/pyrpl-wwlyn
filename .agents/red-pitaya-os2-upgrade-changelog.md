@@ -174,9 +174,8 @@ The read-only preflight gate has passed. A subsequent notebook run on
 then successfully loaded the `fpga.bit.bin` overlay. The FPGA Manager reported
 `operating`, `/tmp/loaded_fpga.inf` identified the expected BIN and DTBO, and
 the board reported BIN MD5 `445d5fbae304d4ccc7bb5af30e849967`, matching the
-preserved local fork bitstream. This satisfies live gates 1 through 4 below;
-the separate monitor connection and functional gates 5 and 6 were then checked
-separately. The next saved notebook cell completed `Pyrpl(...)` with
+preserved local fork bitstream. This satisfies live gates 1 through 4 below.
+The next saved notebook cell completed `Pyrpl(...)` with
 `reloadfpga=False`, `reloadserver=True`, and a successful monitor-client
 connection and fork register-metadata check. A read of PID0's input-filter
 setting also completed. Live gate 5 is therefore met; the ASG/scope/PID,
@@ -209,3 +208,13 @@ python -m pyrpl.redpitaya_preflight rp-xxxxxx.local
 If SSH disappears once loading starts, do not retry. Wait for the board to
 return and inspect uptime, the two `/tmp` diagnostics, FPGA Manager state, and
 the kernel log to determine whether it rebooted.
+
+## Promotion decision (2026-09-12)
+
+The user explicitly requested promotion to `gen1-os2/main` after the live
+FPGA-load and PyRPL-connection results above. This is a one-time exception to
+the original requirement to complete every functional field gate before
+promotion. Gates 1 through 5 are supported by the observed result; gate 6 and
+the newer `fpga.bin` OS 2 contract remain unverified. The promoted branch must
+not be described as having validated analog output, scope, PID, setpoint, or
+slow-analog behavior, nor as evidence for Gen 2 boards.

@@ -101,6 +101,9 @@
   password. It contains machine- and device-specific state and
   hardware-mutating cells. Do not run it or rewrite saved outputs unless the
   user explicitly requests notebook/device work.
+- `test.ipynb.template` is the clean Gen 1/OS 2 starter. Keep it free of saved
+  outputs, device-specific addresses, and passwords; copy it to a new `.ipynb`
+  filename rather than overwriting the tracked experiment record.
 - Keep agent-only investigation scripts and notes under `.agents/`, outside
   the package and user-facing test areas. Automated product regressions still
   belong in `pyrpl/test` or `tests`; do not confuse them with disposable agent
