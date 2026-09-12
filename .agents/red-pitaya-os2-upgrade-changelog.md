@@ -169,18 +169,21 @@ The implementation therefore continues to gate on the installed script's
 observed capabilities and hardware profile rather than adding a special case
 for this exact OS build.
 
-The read-only preflight gate has passed. Controlled live loading remains
-separately gated and requires explicit authorization and the board booted from
-recoverable OS media. The user-facing guarded workflow now lives in
+The read-only preflight gate has passed. A subsequent notebook run on
+`rp-f0fe21.local` recorded OS `2.07-3`, profile `2`, `z10_125`, and `Z7010`,
+then successfully loaded the `fpga.bit.bin` overlay. The FPGA Manager reported
+`operating`, `/tmp/loaded_fpga.inf` identified the expected BIN and DTBO, and
+the board reported BIN MD5 `445d5fbae304d4ccc7bb5af30e849967`, matching the
+preserved local fork bitstream. This satisfies live gates 1 through 4 below;
+the separate monitor connection and functional gates 5 and 6 remain.
+
+The user-facing workflow now lives in
 `test.ipynb`, with each user action preceded by a short Markdown explanation.
 FPGA programming and monitor-server/client connection are separate cells, and
 the connection cell explicitly uses `reloadfpga=False`. The redundant ignored
-`tests/simple_connection_test.py` was removed together
-with its tracked template. To cover OS 2.07+ rather than one release, validate
-at least one
-`fpga.bit.bin` OS 2 image and one newer `fpga.bin` OS 2 image. Before loading,
-collect the reported OS, detected overlay contract, profile ID, FPGA path,
-Zynq type, and uptime. Then require all of the following:
+`tests/simple_connection_test.py` was removed together with its tracked
+template. To cover OS 2.07+ rather than one release, a newer `fpga.bin` OS 2
+image still needs validation. The complete field gates are:
 
 ```powershell
 python -m pyrpl.redpitaya_preflight rp-xxxxxx.local
