@@ -172,8 +172,10 @@ for this exact OS build.
 The read-only preflight gate has passed. Controlled live loading remains
 separately gated and requires explicit authorization and the board booted from
 recoverable OS media. The user-facing guarded workflow now lives in
-`test.ipynb`, with each user action preceded by a short Markdown explanation;
-the redundant ignored `tests/simple_connection_test.py` was removed together
+`test.ipynb`, with each user action preceded by a short Markdown explanation.
+FPGA programming and monitor-server/client connection are separate cells, and
+the connection cell explicitly uses `reloadfpga=False`. The redundant ignored
+`tests/simple_connection_test.py` was removed together
 with its tracked template. To cover OS 2.07+ rather than one release, validate
 at least one
 `fpga.bit.bin` OS 2 image and one newer `fpga.bin` OS 2 image. Before loading,
