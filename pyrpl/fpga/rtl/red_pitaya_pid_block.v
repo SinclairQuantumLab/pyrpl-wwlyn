@@ -97,6 +97,9 @@ module red_pitaya_pid_block #(
    input      [ 32-1: 0] wdata
 );
 
+// Reject undeclared internal connections; retain the legacy ANSI port types.
+`default_nettype none
+
 //-----------------------------
 // Setpoint sequence with robust TTL edge detection
 reg [3:0] setpoint_array_write_index;
@@ -166,11 +169,11 @@ reg signed [ 14-1: 0] set_ival;   // integral value to set
 reg            ival_write;
 reg [  3-1: 0] pause_pid_on_sync;  // register to specify which gains (P, I, and/or D) are paused during active sync signal
 reg enable_differential_mode;  // register to specify which gains (P, I, and/or D) are paused during active sync signal
-wire pause_i_on_sync;
+wire pause_i;
 assign pause_i = pause_pid_on_sync[0] & paused_i;
-wire pause_p_on_sync;
+wire pause_p;
 assign pause_p = pause_pid_on_sync[1] & paused_i;
-wire pause_d_on_sync;
+wire pause_d;
 assign pause_d = pause_pid_on_sync[2] & paused_i;
 reg [ GAINBITS-1: 0] set_kp;   // Kp
 reg [ GAINBITS-1: 0] set_ki;   // Ki
@@ -179,6 +182,10 @@ reg [ 32-1: 0] set_filter;   // filter setting
 // limits if arbitrary saturation is enabled
 reg signed [ 14-1:0] out_max;
 reg signed [ 14-1:0] out_min;
+
+// Declare integrator readback before the register-bus case uses it.
+localparam IBW = ISR+14;
+wire signed [IBW-ISR-1:0] int_shr;
 
 //  System bus connection
 always @(posedge clk_i) begin
@@ -322,11 +329,9 @@ assign kp_final = (pause_p == 1'b1) ? kp_reg_held : kp_reg;
 //formerly
 //-localparam IBW = 64; //integrator bit-width. Over-represent the integral sum to record longterm drifts
 //-reg   [15+GAINBITS-1: 0] ki_mult  ;
-localparam IBW = ISR+14; //integrator bit-width. Over-represent the integral sum to record longterm drifts (overrepresented by 2 bits)
 reg signed  [16+GAINBITS-1: 0] ki_mult ; //16 comes from error
 wire signed [IBW  : 0] int_sum       ;
 reg signed  [IBW-1: 0] int_reg       ;
-wire signed [IBW-ISR-1: 0] int_shr   ;
 
 always @(posedge clk_i) begin
    if (rstn_i == 1'b0) begin
@@ -356,7 +361,7 @@ assign int_shr = $signed(int_reg[IBW-1:ISR]) ;
 wire signed [    39-1: 0] kd_mult       ;
 reg signed  [39-DSR-1: 0] kd_reg        ;
 reg signed  [39-DSR-1: 0] kd_reg_r      ;
-reg signed  [39-DSR  : 0] kd_reg_s      ;
+wire signed [39-DSR  : 0] kd_reg_s      ;
 
 generate 
 	if (DERIVATIVE == 1) begin
@@ -379,7 +384,8 @@ generate
         assign kd_mult = (pause_d==1'b1) ? $signed({15+GAINBITS-1{1'b0}}) : $signed(error) * $signed(set_kd);
 	end
 	else begin
-		wire [15+GAINBITS-DSR:0] kd_reg_s;
+		// Drive the sum's D input; a local wire here shadows it and leaves
+		// the default DERIVATIVE=0 PID output unknown in RTL simulation.
 		assign kd_reg_s = {15+GAINBITS-DSR+1{1'b0}};
 	end
 endgenerate 
@@ -432,3 +438,4 @@ generate
 endgenerate
 
 endmodule
+`default_nettype wire
