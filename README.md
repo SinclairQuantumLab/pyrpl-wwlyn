@@ -94,8 +94,8 @@ firmware basenames, `fpga.bit.bin` and `fpga.bin`, with a matching hash-pinned
 DTBO for each. Profile IDs and paths must match exactly. An unknown loader
 contract, early OS 2, OS 3, Z7020, or another converter family is refused
 before FPGA files are uploaded. OS 2.07+ support has passed hardware-free
-regression tests; controlled field validation is still pending for OS 2 and
-the Gen 2 profiles.
+regression tests. FPGA loading and PyRPL connection were field-tested on one
+original Z7010 board running OS 2.07-3; Gen 2 field validation remains pending.
 The built-in FPGA filenames resolve from the installed package, so launching
 PyRPL from another working directory does not substitute another image.
 
@@ -120,6 +120,10 @@ unsupported loader, mismatched board profile, unapproved asset, or incomplete
 SSH result. Its JSON report identifies the exact board variant and marks Gen 2
 field validation as pending. Run it only when live read-only access to the
 named board is intended.
+
+For a step-by-step Z7010 Gen 2 field test, copy `test.ipynb.template` to a new
+`.ipynb` filename and edit its hostname. The template has no saved output or
+password; `test.ipynb` retains the earlier experiment record.
 
 First, hook up your Red Pitaya / STEMlab to a LAN accessible from your computer (follow the instructions for this on redpitya.com and make sure you can access your Red Pitaya with a web browser by typing its ip-address /  hostname into the address bar).
 In a command line terminal, type

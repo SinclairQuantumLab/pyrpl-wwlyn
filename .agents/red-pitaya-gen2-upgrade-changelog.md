@@ -87,3 +87,7 @@ profile query. The four corrective commits were selectively backported with
 remain unchanged. All 26 fake-SSH loader regressions pass on CPython 3.14.4;
 no Gen 2 device was contacted or programmed. The hardware gate above remains
 open.
+
+The clean `test.ipynb.template` separates the future user's preflight,
+programming, server connection, and initial register read. It has not been run
+against a Gen 2 device and does not change the field-validation state.
