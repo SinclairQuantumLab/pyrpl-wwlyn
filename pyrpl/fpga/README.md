@@ -56,6 +56,10 @@ cannot detect the attached load.
 
 # Build process
 
+The Z7020 Pro port has a separate [development target](targets/z20_gen2/README.md)
+and [self-checking PID simulation](sim/README.md). These do not use the legacy
+build below or replace its packaged Z7010 BIN.
+
 Xilinx Vivado 2015.4 (including SDK) is required. If installed at the default location, then the next command will properly configure system variables:
 ```bash
 . /opt/Xilinx/Vivado/2015.4/settings64.sh

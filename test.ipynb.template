@@ -7,7 +7,7 @@
    "source": [
     "# Standard Z7010 Gen 2 / OS 2 field test\n",
     "\n",
-    "Copy this template to test.ipynb for local settings and results; Git ignores that working copy. This workflow uses the preserved fork BIN and matching OS 2 overlay. Pro/Z7020 testing is separate. Cells explicitly identify device changes; run them step by step."
+    "Retained Z7010 reference workflow: this Pro development branch does not yet package a Z7020 image, and its loader rejects Z7020. Copy the template only to a new test.ipynb; preserve existing local results. This workflow uses the original fork BIN and matching Z7010 OS 2 overlay. Run cells step by step."
    ]
   },
   {

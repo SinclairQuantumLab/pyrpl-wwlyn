@@ -78,6 +78,10 @@ python -m pip install --editable .
 
 ### Red Pitaya compatibility
 
+This Pro development branch is preparing a separate Z7020 / OS 2 port.
+No Z7020 image is packaged yet; the loader still refuses Z7020. The compatibility
+list and notebook below describe the retained Z7010 reference implementation.
+
 This branch preserves the author's exact FPGA image for an
 STEMlab 125-14 with Zynq-7010. The loader supports:
 
@@ -124,8 +128,8 @@ named board is intended.
 For a step-by-step Z7010 Gen 2 field test, copy `test.ipynb.template` to
 `test.ipynb` and edit its hostname. The template is versioned; `test.ipynb` is an
 ignored local working copy where you can keep your settings and results.
-Do not overwrite an existing notebook to update it. Current development targets
-the standard Z7010 Gen 2; the separate Pro candidate is not being advanced.
+Do not overwrite an existing notebook to update it. Standard Z7010 Gen 2
+offline readiness is recorded at `3fc4307`; physical tests are deferred.
 The template separates preflight, FPGA programming, and server connection,
 then provides ASG/ADC, PID hold/integrator, 16-step setpoint/TTL, slow-input,
 cleanup, and reconnect steps. Calibrated analog measurements, closed-loop

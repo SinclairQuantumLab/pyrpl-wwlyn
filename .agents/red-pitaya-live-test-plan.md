@@ -10,8 +10,8 @@ not permission for an agent to contact or program a board.
 | Author-board Python 3.9 baseline | `407a9d1`, original Z7010, OS 1.04-18 | Field-tested comparison point; no OS downgrade is required for this work |
 | Python 3.14 implementation | `c535358` | Historical Python upgrade checkpoint, not the current OS 2 test checkout |
 | Original-board OS 2 | `gen1-os2/main`, promoted and subsequently updated through `efa5a00` | OS 2.07-3 FPGA loading and PyRPL connection passed; analog/control measurements remain separate |
-| Standard Gen 2, OS 2 | `gen2-os2/feature/device-upgrade`, readiness work starts from `143ef23` | Current candidate; loader, functional, and analog field measurements pending |
-| Pro / Z7020 | Separate candidate / feasibility assessment | Not part of the active standard Gen 2 field session |
+| Standard Gen 2, OS 2 | `gen2-os2/feature/device-upgrade`, checkpoint `3fc4307` | Offline readiness committed; user deferred loader, functional, and analog field measurements |
+| Pro / Z7020 | `gen2-pro-os2/feature/device-upgrade` | RTL/platform development started; no Z7020 load-ready image or field session yet |
 
 Implementation commits `10f0e68`, `7aa600e`, `ddb1077`, and `80b6291`
 are historical references. They predate fixes found during the original-board

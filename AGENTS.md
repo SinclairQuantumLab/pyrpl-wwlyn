@@ -16,10 +16,14 @@
   the exact Z7010 Gen 2 profile families.
 - Do not import implementation changes or FPGA assets from current official
   PyRPL merely because they are newer.
-- Current implementation work targets the standard Z7010 Gen 2 on OS 2 only.
-  Preserve the existing Pro candidate without advancing it. A separate agent
-  may assess Z7020 feasibility read-only at the user's request; that is not
-  authorization to change FPGA assets or implement the Z7020 port.
+- Standard Z7010 Gen 2 offline readiness is committed at `3fc4307`; the user
+  deferred its physical tests. Active development now targets Z7020 Gen 2 Pro
+  on OS 2 under `gen2-pro-os2/feature/device-upgrade`.
+- The user authorized proceeding beyond the Z7020 feasibility assessment.
+  Keep its port/build/simulation evidence in a separate implementation log.
+  Preserve the original BIN and approved Z7010 DTBOs; any new Z7020 image must
+  have a separate target, filename and provenance. Do not enable its loader
+  profile merely because RTL simulation or synthesis succeeds.
 
 ## Branching
 
@@ -60,7 +64,9 @@
     `99f0fd0c3ce394fb0c86e4dec95895b8a5855cc80ebbfd5fedc961fb9ed4a35c`.
   Neither is the maintained/upstream PyRPL overlay, and neither may acquire an
   AXI XADC node. Do not alter FPGA RTL or rebuild the bitstream as part of this
-  loader work.
+  Z7010 loader work. The separately authorized Z7020 port may adapt RTL and
+  platform sources with explicit simulation evidence; it must not overwrite
+  or regenerate the preserved Z7010 artifact.
 - Do not contact, restart, or program a physical Red Pitaya unless live-device
   testing is explicitly requested. Running `test.ipynb`, `reloadfpga=True`,
   or `reloadserver=True` mutates the device.
@@ -103,6 +109,11 @@
   and `tests/test_gen2_manual_workflow.py` with unittest. These characterize
   Python register writes and validate the clean template without executing
   its device cells. They do not prove FPGA or analog behavior.
+- Pro RTL changes must run the real XSim contract in
+  `pyrpl/fpga/sim/run_pid_contract.py`; see its README. Keep simulation and
+  synthesis outputs in new, separate directories, never in the preserved
+  legacy output tree. Z7020 implementation evidence is recorded in
+  `.agents/red-pitaya-z7020-upgrade-changelog.md`.
 
 ## Configuration and notebooks
 
@@ -160,7 +171,7 @@
   Pro Gen 2 paths, plus the published package-pin evidence. The FPGA image and
   DTBO remain unchanged. Gen 2 DAC full scale is +/-2 V into high impedance
   and +/-1 V into 50 ohms; do not silently alter PyRPL's register normalization
-  because software cannot infer the load. A Z7020 Gen 2 target still requires
-  a separately authorized FPGA rebuild/port. TI-based Gen 2 boards require a
+  because software cannot infer the load. The authorized Z7020 Gen 2 port is
+  under development, not load-ready. TI-based Gen 2 boards require a
   different converter/platform design and remain outside the preservation-
   first path.
