@@ -90,8 +90,9 @@ The loader reads the installed `overlay.sh` and supports both known OS 2 custom
 firmware basenames, `fpga.bit.bin` and `fpga.bin`, with a matching hash-pinned
 DTBO for each. An unknown loader contract, early OS 2, OS 3, Gen 2, or Z7020 is
 refused before FPGA files are uploaded. OS 2.07+ support has passed
-hardware-free regression tests but still requires controlled field validation
-before it should be considered proven.
+hardware-free regression tests; FPGA loading and PyRPL connection were also
+field-tested on one original Z7010 board running OS 2.07-3. Analog/control
+functionality and the newer `fpga.bin` contract still need field validation.
 The built-in FPGA filenames resolve from the installed package, so launching
 PyRPL from another working directory does not substitute another image.
 
@@ -108,6 +109,10 @@ It opens an SSH connection and prompts for the password, but sets
 unsupported loader, mismatched board profile, unapproved asset, or incomplete
 SSH result. Run it only when live read-only access to the named board is
 intended.
+
+For a step-by-step notebook, copy `test.ipynb.template` to a new `.ipynb`
+filename and edit its hostname. The template has no saved output or password;
+`test.ipynb` retains the earlier experiment record.
 
 First, hook up your Red Pitaya / STEMlab to a LAN accessible from your computer (follow the instructions for this on redpitya.com and make sure you can access your Red Pitaya with a web browser by typing its ip-address /  hostname into the address bar).
 In a command line terminal, type

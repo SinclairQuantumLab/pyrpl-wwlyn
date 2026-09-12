@@ -95,12 +95,19 @@
 
 ## Configuration and notebooks
 
-- `test.ipynb` is a tracked record of live-device experiments. It contains
-  machine- and device-specific state and hardware-mutating cells. Do not run
-  it, sanitize it, or rewrite its saved outputs unless the user explicitly
-  requests notebook/device work.
-- `tests/simple_connection_test.py` is local and ignored. Never commit its
-  device-specific configuration; keep the tracked template sanitized.
+- `test.ipynb` is the user-facing manual/live-device acceptance workflow and
+  the tracked record of live-device experiments. Put steps that a user is
+  expected to run there, make every mutating step explicit, and never store a
+  password. It contains machine- and device-specific state and
+  hardware-mutating cells. Do not run it or rewrite saved outputs unless the
+  user explicitly requests notebook/device work.
+- `test.ipynb.template` is the clean Gen 1/OS 2 starter. Keep it free of saved
+  outputs, device-specific addresses, and passwords; copy it to a new `.ipynb`
+  filename rather than overwriting the tracked experiment record.
+- Keep agent-only investigation scripts and notes under `.agents/`, outside
+  the package and user-facing test areas. Automated product regressions still
+  belong in `pyrpl/test` or `tests`; do not confuse them with disposable agent
+  diagnostics. Do not add standalone live-device scripts under `tests/`.
 
 ## Red Pitaya OS 2 and Gen 2 investigation
 

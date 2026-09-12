@@ -1,0 +1,191 @@
+{
+ "cells": [
+  {
+   "cell_type": "markdown",
+   "id": "template-intro",
+   "metadata": {},
+   "source": [
+    "# Gen 1 / OS 2 field-test starter\n",
+    "\n",
+    "Copy this template to a new .ipynb file before opening it. Run the steps in order. test.ipynb remains the repository's saved experiment record."
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "template-local-note",
+   "metadata": {},
+   "source": [
+    "## 1. Select the board and image\n",
+    "\n",
+    "Edit the hostname. This cell only checks which local PyRPL installation and fork bitstream will be used."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "template-local",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "import json\n",
+    "from pathlib import Path\n",
+    "import sys\n",
+    "\n",
+    "import pyrpl\n",
+    "from pyrpl.redpitaya import RedPitaya\n",
+    "\n",
+    "HOSTNAME = \"rp-xxxxxx.local\"\n",
+    "SSH_USER = \"root\"\n",
+    "bitstream = Path(pyrpl.__file__).resolve().parent / \"fpga\" / \"red_pitaya.bin\"\n",
+    "\n",
+    "print(\"Python:\", sys.executable)\n",
+    "print(\"PyRPL:\", pyrpl.__file__)\n",
+    "print(\"Bitstream:\", bitstream)\n",
+    "assert bitstream.is_file()"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "template-preflight-note",
+   "metadata": {},
+   "source": [
+    "## 2. Run the read-only preflight\n",
+    "\n",
+    "Enter the SSH password. This checks the OS, board profile, overlay contract, and local FPGA files without uploading or programming anything."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "template-preflight",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "from getpass import getpass\n",
+    "\n",
+    "SSH_PASSWORD = getpass(\"SSH password: \")\n",
+    "device = None\n",
+    "try:\n",
+    "    device = RedPitaya(\n",
+    "        config=None,\n",
+    "        hostname=HOSTNAME,\n",
+    "        user=SSH_USER,\n",
+    "        password=SSH_PASSWORD,\n",
+    "        gui=False,\n",
+    "        autostart=False,\n",
+    "        reloadfpga=False,\n",
+    "        reloadserver=False,\n",
+    "    )\n",
+    "    preflight_report = device.preflight_fpga_update(filename=str(bitstream))\n",
+    "finally:\n",
+    "    if device is not None:\n",
+    "        device.end_ssh()\n",
+    "\n",
+    "print(json.dumps(preflight_report, indent=2, sort_keys=True))"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "template-program-note",
+   "metadata": {},
+   "source": [
+    "## 3. Program the FPGA\n",
+    "\n",
+    "This uploads the fork BIN and matching DTBO and programs the FPGA. It does not start the PyRPL server. Use only on the intended original Z7010 board."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "template-program",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "device = None\n",
+    "try:\n",
+    "    device = RedPitaya(\n",
+    "        config=None,\n",
+    "        hostname=HOSTNAME,\n",
+    "        user=SSH_USER,\n",
+    "        password=SSH_PASSWORD,\n",
+    "        filename=str(bitstream),\n",
+    "        gui=False,\n",
+    "        autostart=False,\n",
+    "        reloadfpga=False,\n",
+    "        reloadserver=False,\n",
+    "    )\n",
+    "    program_report = device.update_fpga(filename=str(bitstream))\n",
+    "finally:\n",
+    "    if device is not None:\n",
+    "        device.end_ssh()\n",
+    "\n",
+    "print(json.dumps(program_report, indent=2, sort_keys=True))"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "template-connect-note",
+   "metadata": {},
+   "source": [
+    "## 4. Start PyRPL and connect\n",
+    "\n",
+    "This installs/starts the monitor server and checks the fork register map. It does not reprogram the FPGA."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "template-connect",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "from pyrpl import Pyrpl\n",
+    "\n",
+    "p = Pyrpl(\n",
+    "    config=\"gen1-os2-field-test\",\n",
+    "    hostname=HOSTNAME,\n",
+    "    user=SSH_USER,\n",
+    "    password=SSH_PASSWORD,\n",
+    "    filename=str(bitstream),\n",
+    "    gui=False,\n",
+    "    reloadfpga=False,\n",
+    "    reloadserver=True,\n",
+    ")\n",
+    "rp = p.rp\n",
+    "print(\"PyRPL connected; fork register checks passed.\")"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "template-read-note",
+   "metadata": {},
+   "source": [
+    "## 5. Read a module setting\n",
+    "\n",
+    "This reads PID0's input-filter setting without driving an output. Further analog/control checks require their own measurements."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "template-read",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "print(\"PID0 input filter:\", rp.pid0.inputfilter)"
+   ]
+  }
+ ],
+ "metadata": {
+  "kernelspec": {
+   "display_name": "Python 3",
+   "language": "python",
+   "name": "python3"
+  },
+  "language_info": {
+   "name": "python"
+  }
+ },
+ "nbformat": 4,
+ "nbformat_minor": 5
+}
