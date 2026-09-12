@@ -7,7 +7,7 @@
    "source": [
     "# Z7010 Gen 2 / OS 2 field-test starter\n",
     "\n",
-    "Copy this template to a new .ipynb file before opening it. Run the steps in order. test.ipynb remains the repository's saved experiment record."
+    "For a new checkout, copy this template to test.ipynb and edit the hostname. Run the steps in order. test.ipynb is ignored by Git so your settings and results stay local."
    ]
   },
   {

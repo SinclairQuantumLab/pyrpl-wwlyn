@@ -168,6 +168,11 @@ custom `overlay.sh` workflow as OS `2.07-43` or newer. The test board reports
 `fpga.bit.bin` custom-FPGA contract. The loader gates on observed script
 capabilities rather than this exact OS build number.
 
+The versioned user-facing workflow lives in `test.ipynb.template`, with each
+user action preceded by a short Markdown explanation. `test.ipynb` is the
+ignored local working copy; removing it from the index preserves the local
+file, and earlier committed experiment records remain in Git history.
+
 The original-generation board subsequently loaded the preserved fork BIN with
 the `fpga.bit.bin` overlay and connected to the PyRPL monitor client. Its FPGA
 Manager reported `operating`; the functional ASG/scope/PID gate remains open.

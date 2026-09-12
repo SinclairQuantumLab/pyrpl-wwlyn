@@ -98,15 +98,13 @@
 
 ## Configuration and notebooks
 
-- `test.ipynb` is the user-facing manual/live-device acceptance workflow and
-  the tracked record of live-device experiments. Put steps that a user is
-  expected to run there, make every mutating step explicit, and never store a
-  password. It contains machine- and device-specific state and
-  hardware-mutating cells. Do not run it or rewrite saved outputs unless the
+- `test.ipynb.template` is the tracked user-facing manual/live-device starter.
+  Put user-run steps there with brief Markdown explanations. Keep it free of
+  saved outputs, device-specific addresses, and passwords.
+- `test.ipynb` is the ignored local working copy, created from the template.
+  Preserve its settings and saved outputs. Never stage it or overwrite it
+  during template updates. Do not run it or change its contents unless the
   user explicitly requests notebook/device work.
-- `test.ipynb.template` is the clean Z7010 Gen 2/OS 2 starter for standard and
-  Pro profiles. Keep it free of saved outputs, device-specific addresses, and
-  passwords; copy it to a new `.ipynb` filename for a live test.
 - Keep agent-only investigation scripts and notes under `.agents/`, outside
   the package and user-facing test areas. Automated product regressions still
   belong in `pyrpl/test` or `tests`; do not confuse them with disposable agent
