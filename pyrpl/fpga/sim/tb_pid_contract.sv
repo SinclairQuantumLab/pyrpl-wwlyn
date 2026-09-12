@@ -13,6 +13,13 @@ module tb_pid_contract;
     wire [31:0] rdata;
     integer failures = 0, checks = 0, i, value;
     reg signed [31:0] held_integral;
+    wire [4:0] filters_done;
+    // Parameter families used by PID, IQ input/quadrature, trigger and IIR.
+    filter_contract_case #(3, 5, 14, 10) pid_filters(filters_done[0]);
+    filter_contract_case #(1, 5, 14, 50) iq_input(filters_done[1]);
+    filter_contract_case #(4, 5, 24, 10) iq_quad(filters_done[2]);
+    filter_contract_case #(1, 5, 14, 1) trigger_filter(filters_done[3]);
+    filter_contract_case #(1, 3, 17, 1000) iir_filter(filters_done[4]);
 
     red_pitaya_pid_block dut (
         .clk_i(clk), .rstn_i(rstn), .paused_i(paused),
@@ -170,6 +177,7 @@ module tb_pid_contract;
         @(negedge clk); data_in = 256; diff_in = 128;
         expect_output(128);
 
+        check(filters_done === 5'b11111, "all enabled-filter contracts completed");
         if (failures) $fatal(1, "PID_CONTRACT_FAIL %0d of %0d checks", failures, checks);
         $display("PID_CONTRACT_PASS %0d checks", checks);
         $finish;

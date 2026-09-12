@@ -34,11 +34,23 @@ Covered contracts:
   high and no falling-edge advance;
 - differential input mode.
 
+The same run also checks the actual filter cascade against an integer
+fixed-point recurrence model at both sides of each clock edge. Five parameter
+families cover the PID, IQ input, four-stage 24-bit IQ quadrature, trigger and
+17-bit IIR input prefilter (not the IIR biquad itself). Each family makes 4,096
+comparisons over signed rails, impulses, deterministic random samples, resets,
+bypass/LPF/HPF switching, mixed cascades and every register-encoded shift,
+including the existing MAXSHIFT clamp. State keeps evolving during bypass,
+and the model preserves the delta-register delay and truncation/wrap behavior.
+The PID bench requires all five filter checkers to finish before reporting its
+own pass. No checker forces or reads DUT internal state.
+
 The runner was validated with Vivado 2023.2. The test keeps DERIVATIVE=0,
 the fork's normal PI configuration. DERIVATIVE=1 was already documented as
 non-functional and is not enabled, repaired or validated by this checkpoint.
-The enabled prefilter, top-level DIO/manual-pulse routing, CDC/metastability,
-full-board clocking, timing closure and analog behavior need separate tests.
+The complete PID-with-enabled-filter bus/datapath interaction, full IQ/IIR
+modules, top-level DIO/manual-pulse routing, CDC/metastability, full-board
+clocking, timing closure and analog behavior still need separate tests.
 
 The retained Z7010 BIN is not rebuilt. These source contracts and timing
 observations do not prove bit-for-bit equivalence to that historical artifact.

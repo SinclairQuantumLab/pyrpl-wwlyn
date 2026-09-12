@@ -97,6 +97,9 @@ module red_pitaya_pid_block #(
    input      [ 32-1: 0] wdata
 );
 
+// Reject undeclared internal connections; retain the legacy ANSI port types.
+`default_nettype none
+
 //-----------------------------
 // Setpoint sequence with robust TTL edge detection
 reg [3:0] setpoint_array_write_index;
@@ -166,11 +169,11 @@ reg signed [ 14-1: 0] set_ival;   // integral value to set
 reg            ival_write;
 reg [  3-1: 0] pause_pid_on_sync;  // register to specify which gains (P, I, and/or D) are paused during active sync signal
 reg enable_differential_mode;  // register to specify which gains (P, I, and/or D) are paused during active sync signal
-wire pause_i_on_sync;
+wire pause_i;
 assign pause_i = pause_pid_on_sync[0] & paused_i;
-wire pause_p_on_sync;
+wire pause_p;
 assign pause_p = pause_pid_on_sync[1] & paused_i;
-wire pause_d_on_sync;
+wire pause_d;
 assign pause_d = pause_pid_on_sync[2] & paused_i;
 reg [ GAINBITS-1: 0] set_kp;   // Kp
 reg [ GAINBITS-1: 0] set_ki;   // Ki
@@ -435,3 +438,4 @@ generate
 endgenerate
 
 endmodule
+`default_nettype wire

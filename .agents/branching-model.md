@@ -23,10 +23,15 @@ Device- or OS-specific development is named under the target root:
 - `gen1-os1/...` for the original Z7010 STEMlab 125-14 on legacy OS 1;
 - `gen1-os2/...` for the original Z7010 STEMlab 125-14 on supported OS 2;
 - `gen2-os2/...` for the standard Z7010 Gen 2 profile on supported OS 2;
-- `gen2-pro-os2/...` for the Z7010 Gen 2 Pro profile on supported OS 2.
+- `gen2-pro-os2/...` for the Pro candidate on supported OS 2, including its
+  separately authorized, not-yet-load-ready Z7020 port.
 
-Within a root, use the same topic types, for example
-`gen1-os2/feature/os-upgrade` or `gen2-os2/fix/device-profile`.
+Each root has its own ordinary Git development flow. Use `root/develop` to
+integrate that root's `feature/*`, `fix/*` and `refactor/*` topics, then promote
+validated work to `root/main`. For example, `gen1-os2/fix/device-profile`
+merges into `gen1-os2/develop`, not directly into an unrelated root.
+Keep topic branches for distinct work; "integration in develop" does not
+mean renaming all topics to develop or losing their separate provenance.
 
 `<root>/main` is reserved for a commissionable combination. A branch whose
 live-device gate is incomplete remains a feature candidate and must not be
@@ -34,14 +39,23 @@ represented as a commissioned `main`.
 
 ## Propagation
 
+The user authorized a limited rollout of the common PID/filter repairs to
+`root/fix/pid-rtl-shadowing` in each existing compatibility root. Root develops
+are initialized from the current applicable root baseline; the fix topics
+branch from them and merge the shared fix topic. The global develop and
+existing mains remain unchanged. Further merges from these fix topics into
+root develops or mains require an explicit request.
+
 Apply a common change at the earliest applicable common line and merge it
 forward:
 
 ```text
-topic branch -> develop -> compatibility feature -> compatibility main
+common topic -> global develop -> root topic -> root/develop -> root/main
 ```
 
 Prefer merge commits so the same commit identity and ancestry are preserved.
+For an isolated rollout before global develop integration, merge the approved
+common topic directly into the root topic rather than copying its code.
 Use `git cherry-pick -x` only when a deliberately isolated backport is needed
 and merging would import unrelated or incompatible changes. Never rebase a
 published compatibility `main` or rewrite its validation history.
@@ -59,6 +73,20 @@ Merging a shared source repair does not authorize a new packaged BIN or
 automatic promotion of any compatibility main.
 
 ## Imported history
+
+### Root-develop initialization — 2026-09-12
+
+| Root | Starting point for develop | Reason |
+| --- | --- | --- |
+| `gen1-os1` | `gen1-os1/main` at `d7d19c9` | Current original-board/OS1 main. |
+| `gen1-os2` | `gen1-os2/main` at `efa5a00` | Current promoted OS2 main; also reconcile `183b5be` topic ancestry without changing its identical tree. |
+| `gen2-os2` | `gen2-os2/feature/device-upgrade` at `3fc4307` | Latest offline candidate; no field-approved main yet. |
+| `gen2-pro-os2` | `gen2-pro-os2/feature/device-upgrade` at `ef7f1c1` | Latest Pro candidate; no field-approved main yet. |
+
+The first common repair source checkpoint is `43a9764`, including its earlier
+PID declaration/shadowing prerequisites. Later guidance/evidence commits on
+that topic do not change the FPGA implementation. Existing root topic refs
+are retained, and no remotes, published history or user worktree are removed.
 
 The existing commits through `c8355a5` predate this naming model and remain
 unchanged. New names and merge commits organize that history without replaying
