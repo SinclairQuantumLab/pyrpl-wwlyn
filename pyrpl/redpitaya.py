@@ -525,13 +525,17 @@ class RedPitaya(object):
 
     def _read_os2_hardware_profile(self):
         command = (
+            'pyrpl_profile_status=0; '
             "printf 'PYRPL_PROFILE_ID:'; "
-            '/opt/redpitaya/bin/profiles -i 2>/dev/null; '
+            '/opt/redpitaya/bin/profiles -i 2>/dev/null || '
+            'pyrpl_profile_status=$?; '
             "printf '\\nPYRPL_PROFILE_FPGA:'; "
-            '/opt/redpitaya/bin/profiles -f 2>/dev/null; '
-            "printf '\\nPYRPL_PROFILE_ZYNQ:'; "
-            '/opt/redpitaya/bin/profiles -v zynq 2>/dev/null; '
-            "printf '\\n'")
+            '/opt/redpitaya/bin/profiles -f 2>/dev/null || '
+            'pyrpl_profile_status=$?; '
+            "printf '\\nPYRPL_PROFILE_DETAILS:\\n'; "
+            '/opt/redpitaya/bin/profiles -p 2>/dev/null || '
+            'pyrpl_profile_status=$?; '
+            "printf '\\n'; exit \"$pyrpl_profile_status\"")
         try:
             status, result, error = self.ssh.execute(command)
         except (OSError, SSHException, socket.timeout) as exception:
@@ -542,11 +546,13 @@ class RedPitaya(object):
             matches = re.findall(pattern, result, flags=re.IGNORECASE)
             return matches[-1] if matches else None
 
+        zynq_code = last_match(
+            r'Zynq model\s*\([^)]*\)\s*([01])')
         profile = {
             'id': last_match(r'PYRPL_PROFILE_ID:([0-9]+)'),
             'fpga': last_match(
                 r'PYRPL_PROFILE_FPGA:([A-Za-z0-9_.-]+)'),
-            'zynq': last_match(r'PYRPL_PROFILE_ZYNQ:(Z70(?:10|20))'),
+            'zynq': {'0': 'Z7010', '1': 'Z7020'}.get(zynq_code),
             'complete': complete,
             'raw': result + error,
         }

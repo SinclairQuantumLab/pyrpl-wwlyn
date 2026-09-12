@@ -115,9 +115,14 @@ class FakeSsh(object):
         if 'PYRPL_PROFILE_ID:' in command:
             if 'profile' in self.omitted_markers:
                 raise TimeoutError('simulated non-interactive SSH timeout')
+            zynq_code = {'Z7010': '0', 'Z7020': '1'}.get(
+                self.profile_zynq)
             output = ('PYRPL_PROFILE_ID:' + self.profile_id +
                       '\nPYRPL_PROFILE_FPGA:' + self.profile_fpga +
-                      '\nPYRPL_PROFILE_ZYNQ:' + self.profile_zynq + '\n')
+                      '\nPYRPL_PROFILE_DETAILS:\n')
+            if zynq_code is not None:
+                output += ('\t* Zynq model (rp_HPeZynqModels_t) ' +
+                           zynq_code + '\n')
             return 0, output, ''
         if 'PYRPL_PREFLIGHT_UPTIME:' in command:
             if 'preflight' in self.omitted_markers:
@@ -403,6 +408,13 @@ class TestRedPitayaFpgaLoader(unittest.TestCase):
                 self.assertEqual('1234.5', report['uptime_seconds'])
                 self.assertEqual('operating',
                                  report['fpga_manager_state'])
+                profile_probe = [
+                    command for command in device.ssh.executed_commands
+                    if 'PYRPL_PROFILE_ID:' in command]
+                self.assertEqual(1, len(profile_probe))
+                self.assertIn('/opt/redpitaya/bin/profiles -p',
+                              profile_probe[0])
+                self.assertNotIn('profiles -v zynq', profile_probe[0])
                 self.assertEqual([], device.ssh.scp.uploads)
                 self.assertNotIn('rw', device.ssh.commands)
                 self.assertNotIn('__PYRPL_END__', device.ssh.commands)
@@ -417,13 +429,27 @@ class TestRedPitayaFpgaLoader(unittest.TestCase):
                     'cat /root/.version 2>/dev/null;',
                     'if [ -x /opt/redpitaya/sbin/overlay.sh ];',
                     "grep '^[[:space:]]*CUSTOMFPGA[[:space:]]*=' ",
-                    "printf 'PYRPL_PROFILE_ID:';",
+                    'pyrpl_profile_status=0;',
                     "printf 'PYRPL_PREFLIGHT_UPTIME:';",
                 )
                 self.assertTrue(all(
                     command == '' or command.startswith(allowed_prefixes)
                     for command in device.ssh.commands),
                     device.ssh.commands)
+
+    def test_os207_3_accepts_official_profile_print_zynq_field(self):
+        device = make_device(
+            ecosystem_text='Red Pitaya OS 2.07-3', profile_id='2',
+            profile_fpga='z10_125', profile_zynq='Z7010')
+
+        report = device.preflight_fpga_update()
+
+        self.assertEqual(
+            {'id': '2', 'fpga': 'z10_125', 'zynq': 'Z7010'},
+            report['hardware_profile'])
+        self.assertEqual([], device.ssh.scp.uploads)
+        self.assertFalse(any(
+            'overlay.sh pyrpl ' in command for command in device.ssh.commands))
 
     def test_missing_dtbo_fails_before_device_mutation(self):
         device = make_device()
