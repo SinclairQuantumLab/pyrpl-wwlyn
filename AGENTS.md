@@ -22,6 +22,12 @@
   demonstrated implementation issues without changing arithmetic or latency.
   OS loader differences are not part of this work; timing evidence must name
   its FPGA target and must not be generalized from Z7020 to Z7010.
+- The user clarified the timing baseline: investigate and repair the original
+  Gen 1 / Z7010 / OS 1 configuration first. Later OS/device adaptations are
+  separate upgrade work. Do not substitute a Z7020 checkpoint or the Pro PS
+  shell for that baseline. Keep investigation evidence in
+  `.agents/common-z7010-timing-investigation.md`; source fixes remain on the
+  shared topic until explicit propagation instructions.
 
 ## Branching
 
