@@ -77,3 +77,13 @@ Validated with CPython 3.14.4 without contacting a board:
   preflight module; and
 - the fork BIN and both DTBO SHA-256 values remained exactly those recorded in
   `AGENTS.md`.
+
+## OS 2 preflight corrections propagated
+
+The original-generation board exposed three preflight defects in the shared
+OS 2 loader: shell completion markers, interactive SSH timeout, and the Zynq
+profile query. The four corrective commits were selectively backported with
+`git cherry-pick -x` to this Gen 2 candidate. The Gen 2 profile/path gates
+remain unchanged. All 26 fake-SSH loader regressions pass on CPython 3.14.4;
+no Gen 2 device was contacted or programmed. The hardware gate above remains
+open.

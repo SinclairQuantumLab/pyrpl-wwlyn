@@ -159,24 +159,20 @@ enum in `profiles -p`; its profile API defines enum value `0` as `Z7010` and
 value `1` as `Z7020`. The probe now parses that official output and includes a
 general regression for the official profile output and Zynq mapping. The
 observed OS `2.07-3`, profile `2`, `z10_125` result remains field evidence, not
-a version-specific support rule. This correction still awaits a repeat field
-run.
+a version-specific support rule. On the original-generation board, the
+subsequent read-only preflight completed successfully.
 
 Red Pitaya's current official reprogramming documentation labels the complete
 custom `overlay.sh` workflow as OS `2.07-43` or newer. The test board reports
-`2.07-3`, so a successful non-interactive read may legitimately establish that
-the installed script predates the recognized custom-FPGA contract. In that
-case the expected result is an immediate, explicit unsupported-contract
-diagnostic rather than a timeout; supporting that older image would be a
-separate loader path.
+`2.07-3`, but its installed script exposes the recognized fixed
+`fpga.bit.bin` custom-FPGA contract. The loader gates on observed script
+capabilities rather than this exact OS build number.
 
-A repeat read-only preflight with the fix is still required. Controlled live
-loading also remains separately gated and requires explicit authorization and
-the board booted from recoverable OS media. To cover OS 2.07+ rather than one
-release, validate at least one `fpga.bit.bin` OS 2 image and one newer
-`fpga.bin` OS 2 image. Before loading, collect the reported OS, detected
-overlay contract, profile ID, FPGA path, Zynq type, and uptime. Then require
-all of the following:
+The original-generation board subsequently loaded the preserved fork BIN with
+the `fpga.bit.bin` overlay and connected to the PyRPL monitor client. Its FPGA
+Manager reported `operating`; the functional ASG/scope/PID gate remains open.
+These results do not establish Gen 2 compatibility. A newer `fpga.bin` OS 2
+image also still needs validation. The complete field gates are:
 
 ```powershell
 python -m pyrpl.redpitaya_preflight rp-xxxxxx.local
