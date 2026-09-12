@@ -1,6 +1,8 @@
 # Z7010 Gen 2 repository upgrade
 
-Branch: `develop/red-pitaya-upgrade`
+Candidate branches: `gen2-os2/feature/device-upgrade` and
+`gen2-pro-os2/feature/device-upgrade` (originally developed on
+`develop/red-pitaya-upgrade`)
 
 Implementation commit: `80b6291199dfb7a7d784e4c0d355c5905735621f`.
 Use that immutable candidate for the live-device gates recorded in

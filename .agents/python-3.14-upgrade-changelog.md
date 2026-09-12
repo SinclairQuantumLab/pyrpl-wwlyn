@@ -5,7 +5,8 @@
 This upgrade starts from commit `407a9d1`, the CPython 3.9 checkpoint that the
 user reported successfully field-testing on the author's original-generation
 STEMlab 125-14 and Red Pitaya OS `1.04-18` environment. The 3.14 work is a new,
-non-rewriting change on `develop/python-upgrade`.
+non-rewriting change on `refactor/python-upgrade` (formerly
+`develop/python-upgrade`).
 
 The upgrade preserves the fork's hardware identity. It does not modify the Red
 Pitaya loader, server, register map, RTL, or either existing FPGA binary. It
