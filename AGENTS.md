@@ -14,6 +14,23 @@
 - Do not import implementation changes or FPGA assets from current official
   PyRPL merely because they are newer.
 
+## Branching
+
+- `develop` is the integration branch for changes that apply across device/OS
+  combinations. Common work uses standard topic namespaces such as
+  `feature/*`, `fix/*`, and `refactor/*` and is merged into `develop`.
+- Device- or OS-specific work belongs under its target compatibility root,
+  for example `gen1-os2/feature/os-upgrade` or
+  `gen2-os2/fix/device-profile`.
+- A compatibility root's `main` branch means that combination is considered
+  commissionable. Do not create or advance it based only on offline evidence
+  when its field gate is still open.
+- Propagate common changes from `develop` into compatibility branches with
+  merge commits. Use `git cherry-pick -x` only for an intentionally selective
+  backport that must not import the source branch's other changes.
+- Do not rebase published compatibility `main` branches or rewrite validation
+  history.
+
 ## FPGA and device safety
 
 - The fork author's known hardware environment was Red Pitaya OS `1.04-18`
