@@ -220,3 +220,18 @@ promotion. Gates 1 through 5 are supported by the observed result; gate 6 and
 the newer `fpga.bin` OS 2 contract remain unverified. The promoted branch must
 not be described as having validated analog output, scope, PID, setpoint, or
 slow-analog behavior, nor as evidence for Gen 2 boards.
+
+## Additional user-run signal tests — 2026-09-15
+
+The user subsequently reported all tests in their expanded local notebook
+passing. Review confirms original-image loading, connection, DC-source setup,
+a saved ASG triangle loopback trace, negative-I PID setup and fast-output
+shutdown. Manual Rigol/DC calibration notes are retained separately from
+machine-saved observations. See
+[the field record](gen1-os2-signal-field-result-20260915.md) for exact values,
+notebook backup hash and the 1 Hz code / 1 kHz prose discrepancy.
+
+This adds specific analog/control observations to the earlier connection-only
+record; it does not retroactively validate all of gate 6. The original BIN and
+RTL remain unchanged. The next requested run is the same signal test on the
+unrepaired Gen 2 Pro OS 2 candidate, using that board's own calibration.

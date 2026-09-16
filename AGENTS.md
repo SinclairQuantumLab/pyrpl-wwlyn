@@ -102,6 +102,9 @@
   Preserve its settings and saved outputs. Never stage it or overwrite it
   during template updates. Do not run it or change its contents unless the
   user explicitly requests notebook/device work.
+- The user permits the factory-default password in their local development
+  notebook. Preserve their chosen password setup; do not silently replace it
+  with a prompt. The tracked template remains free of passwords.
 - Keep agent-only investigation scripts and notes under `.agents/`, outside
   the package and user-facing test areas. Automated product regressions still
   belong in `pyrpl/test` or `tests`; do not confuse them with disposable agent
