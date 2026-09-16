@@ -5,9 +5,9 @@
    "id": "template-intro",
    "metadata": {},
    "source": [
-    "# Standard Z7010 Gen 2 / OS 2 field test\n",
+    "# Gen 2 Pro Z7020 / OS 2: author-logic baseline test\n",
     "\n",
-    "Retained Z7010 reference workflow: this Pro development branch does not yet package a Z7020 image, and its loader rejects Z7020. Copy the template only to a new test.ipynb; preserve existing local results. This workflow uses the original fork BIN and matching Z7010 OS 2 overlay. Run cells step by step."
+    "First device test of wwlyn's RTL at 387faf3, with Z7020/OS 2 platform adaptation only. Common PID/filter fixes are intentionally absent. This is an experimental comparison, not a commissioned release or proof of equivalence to the historical Z7010 BIN. Run one step at a time; programming and connection are separate. See .agents/z7020-author-baseline-test.md for build provenance and known simulation/timing findings."
    ]
   },
   {
@@ -15,9 +15,9 @@
    "id": "template-local-note",
    "metadata": {},
    "source": [
-    "## 1. Select the board and image\n",
+    "## 1. Select the board and Z7020 test image\n",
     "\n",
-    "Edit the hostname. This cell only checks which local PyRPL installation and fork bitstream will be used."
+    "Set the hostname and select this project's .venv kernel. This cell checks local files only. The original red_pitaya.bin is for Z7010 and is not used here."
    ]
   },
   {
@@ -32,16 +32,20 @@
     "import sys\n",
     "\n",
     "import pyrpl\n",
-    "from pyrpl.redpitaya import RedPitaya\n",
+    "from pyrpl.redpitaya import RedPitaya, Z20_AUTHOR_BITSTREAM_FILENAME\n",
     "\n",
     "HOSTNAME = \"rp-xxxxxx.local\"\n",
     "SSH_USER = \"root\"\n",
-    "bitstream = Path(pyrpl.__file__).resolve().parent / \"fpga\" / \"red_pitaya.bin\"\n",
+    "bitstream = Path(pyrpl.__file__).resolve().parent / Z20_AUTHOR_BITSTREAM_FILENAME\n",
     "\n",
     "print(\"Python:\", sys.executable)\n",
     "print(\"PyRPL:\", pyrpl.__file__)\n",
     "print(\"Bitstream:\", bitstream)\n",
-    "assert bitstream.is_file()"
+    "assert bitstream.is_file()\n",
+    "build_record = json.loads((bitstream.parent / \"red_pitaya_z20_gen2_author.json\").read_text())\n",
+    "print(\"RTL baseline:\", build_record[\"rtl_commit\"], \"common fixes:\", build_record[\"common_pid_filter_fixes_included\"])\n",
+    "print(\"Timing closed:\", build_record[\"timing_closed\"], \"setup WNS [ns]:\", build_record[\"setup_wns_ns\"])\n",
+    "print(\"RTL simulation:\", build_record[\"rtl_simulation\"])"
    ]
   },
   {
@@ -91,7 +95,7 @@
    "source": [
     "## 3. Program the FPGA\n",
     "\n",
-    "Uploads the fork BIN and matching DTBO and programs the FPGA, without starting the PyRPL server. This session targets the standard Z7010 Gen 2 board identified in step 2."
+    "Uploads the separate Z7020 author-baseline image and fork-matched OS 2 overlay, then programs the FPGA. This changes the active FPGA and temporarily stops web services; it does not start the PyRPL server. Use a bench setup with experimental actuators disconnected."
    ]
   },
   {
@@ -142,7 +146,7 @@
     "from pyrpl import Pyrpl\n",
     "\n",
     "p = Pyrpl(\n",
-    "    config=\"gen2-os2-field-test\",\n",
+    "    config=\"gen2-pro-os2-author-baseline\",\n",
     "    hostname=HOSTNAME,\n",
     "    user=SSH_USER,\n",
     "    password=SSH_PASSWORD,\n",
@@ -336,7 +340,7 @@
    "source": [
     "## 11. Exercise the proportional path\n",
     "\n",
-    "Configures PID0 with an internal ASG input and no physical output. Its trace should follow half the ASG signal. This does not tune or close an experimental feedback loop."
+    "Configures PID0 with an internal ASG input and no physical output. Record whether the PID trace follows half the ASG signal. This is the original, unrepaired RTL under a new toolchain; a failure is a baseline finding, not a reason to apply fixes during this test."
    ]
   },
   {
@@ -542,7 +546,7 @@
    "outputs": [],
    "source": [
     "p._clear()\n",
-    "p = Pyrpl(config=\"gen2-os2-field-test\", hostname=HOSTNAME,\n",
+    "p = Pyrpl(config=\"gen2-pro-os2-author-baseline\", hostname=HOSTNAME,\n",
     "          user=SSH_USER, password=SSH_PASSWORD,\n",
     "          filename=str(bitstream), gui=False,\n",
     "          reloadfpga=False, reloadserver=False)\n",

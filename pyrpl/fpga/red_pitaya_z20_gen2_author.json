@@ -1,0 +1,33 @@
+{
+  "kind": "experimental original-logic device-test image, not a commissioned release",
+  "date": "2026-09-15",
+  "part": "xc7z020clg400-1",
+  "rtl_commit": "387faf3012c21925c9905d81a95cb681ac7d1b22",
+  "platform_checkpoint": "188dbfe042f9592dbf24ed5209bc43e207542cfe",
+  "common_pid_filter_fixes_included": false,
+  "historical_z7010_bin_equivalence_established": false,
+  "toolchain": "Vivado and Bootgen 2023.2",
+  "bitstream": "red_pitaya_z20_gen2_author.bit.bin",
+  "bitstream_bytes": 4045568,
+  "bitstream_sha256": "f6728daaf863f6c48a1d8b27a7262d7fb7653c489f37db36acd6cbb9cc4a7307",
+  "supported_test_profile": {"id": 22, "fpga": "z20_125_v2", "zynq": "Z7020"},
+  "dtbo": {
+    "fpga.bit.bin": {"file": "red_pitaya_os2_z10.dtbo", "sha256": "41a1c828bc5a7bbe99542353dfd2fbe181927e79b0e7515b86e1abbc006577f9"},
+    "fpga.bin": {"file": "red_pitaya_os2_z10_fpga_bin.dtbo", "sha256": "99f0fd0c3ce394fb0c86e4dec95895b8a5855cc80ebbfd5fedc961fb9ed4a35c"}
+  },
+  "overlay_contract": "Unchanged 125/250/50/200 MHz fabric clocks, 64-bit HP0/HP1, direct RTL XADC; existing fork overlays reused byte-for-byte, not official AXI-XADC overlays.",
+  "bitstream_generation_drc_errors": 0,
+  "bitstream_drc_warnings": 133,
+  "routing_errors": 0,
+  "timing_closed": false,
+  "setup_wns_ns": -4.490,
+  "setup_failing_endpoints": 7318,
+  "hold_whs_ns": -2.362,
+  "hold_failing_endpoints": 28,
+  "methodology_critical_warnings": ["TIMING-17: unconstrained DNA clock"],
+  "unconstrained_internal_endpoints": 2,
+  "inputs_without_delay": 16,
+  "outputs_without_delay": 46,
+  "rtl_simulation": "FAIL: original int_shr declaration order rejected by XSim 2023.2; original RTL intentionally not changed.",
+  "hardware_test": "not performed"
+}

@@ -259,3 +259,38 @@ checkpoint query used for the preceding discussion. On the existing
 (ADC data register to PID held-P path), with worst hold +0.069 ns for those
 destinations. Reports remain at local `TEMP/z20-pid-dac62c1d`. This additional
 finding is not a PID timing fix or evidence about the historical BIN.
+
+## Original-logic first-device candidate — 2026-09-15
+
+The user requires the first device test before the shared repairs. This now
+supersedes the intended re-merge mentioned above for the device-upgrade topic.
+The user explicitly authorized rewriting this unpushed branch: its `ef7f1c1`
+common-fix merge was removed by moving it to `188dbfe`. Existing develop/main
+and fix topics were not changed. No new revert commit or new test branch is
+needed; work remains on `gen2-pro-os2/feature/device-upgrade`.
+
+Every RTL file matches wwlyn `387faf3`. A separately named experimental Z7020
+image was routed/exported, with **failed original-source XSim compilation and
+unclosed timing** recorded rather than repaired. Its exact hash and profile
+22 / `z20_125_v2` / Z7020 enable an explicit test-only loader path; the original
+Z7010 BIN and the two fork-derived overlays remain unchanged. The stepwise
+notebook is prepared for the user; no live device action was taken.
+
+See [the current test record](z7020-author-baseline-test.md) and
+[full build evidence](z7020-author-baseline-build.json). Current software
+validation: 70 checkout unittests, 25 Nose tests, compilation of 119 Python
+files, and fresh wheel installation/tests passed (one expected checkout-only
+skip in the fresh suite). These results do not turn the retained RTL simulation
+failure or timing failures into passes, and do not commission this candidate.
+
+### First user-run loading and connection result — 2026-09-15
+
+The saved notebook now confirms steps 1–5: correct original-logic Z7020 image,
+read-only preflight, successful FPGA Manager programming, PyRPL connection and
+PID register metadata reads. The user also reported that it ran well.
+Detailed observations, artifact identity and the local byte-identical notebook
+backup hash are in [the field record](z7020-author-baseline-field-result.md).
+This does not claim oscilloscope/analog validation or change the retained
+simulation/timing findings. No compatibility main is advanced. At the user's
+request, commit this work before returning to the existing `gen1-os2/main`
+for their next physical signal tests; do not import common repairs there.

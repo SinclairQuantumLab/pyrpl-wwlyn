@@ -115,6 +115,8 @@ target/
 pyrpl/config/*.bak
 
 #user config
+# Local, byte-preserved notebook histories; may contain device-specific data.
+/.agents/local-notebooks/
 pyrpl/config/user_config/*.yml
 pyrpl/config/user_config/*.bak
 pyrpl/config/user_config
