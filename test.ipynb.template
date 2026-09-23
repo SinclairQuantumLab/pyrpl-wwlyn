@@ -5,9 +5,9 @@
    "id": "template-intro",
    "metadata": {},
    "source": [
-    "# Gen 2 Pro Z7020 / OS 2: author-logic baseline test\n",
+    "# Gen 2 Pro Z7020 / OS 2: repeat the Gen 1 signal tests\n",
     "\n",
-    "First device test of wwlyn's RTL at 387faf3, with Z7020/OS 2 platform adaptation only. Common PID/filter fixes are intentionally absent. This is an experimental comparison, not a commissioned release or proof of equivalence to the historical Z7010 BIN. Run one step at a time; programming and connection are separate. See .agents/z7020-author-baseline-test.md for build provenance and known simulation/timing findings."
+    "Repeat the Gen 1 DC calibration, 1 Hz / 1 kHz triangle loopback and negative-I PID experiment on the original-logic Z7020 image. Common PID/filter fixes are intentionally absent. The earlier Pro loading/connection test passed; timing remains unclosed. Use fresh measurements for this board, not the Gen 1 calibration. Run one step at a time."
    ]
   },
   {
@@ -193,9 +193,9 @@
    "id": "template-bench-note",
    "metadata": {},
    "source": [
-    "## 6. Prepare the bench workflow\n",
+    "## 6. Record the bench setup\n",
     "\n",
-    "This cell only defines local settings and a scope helper. Select IN/OUT 1 or 2 and record the actual load. Gen 2 full scale is ±2 V at Hi-Z or ±1 V at 50 Ω; PyRPL's existing numerical scale is unchanged. The helper configures/acquires the scope when called."
+    "Use OUT1 → IN1 and the external Rigol as in the Gen 1 run. Record termination, input jumper, probe and instrument settings below. Gen 2 output full scale is ±2 V at Hi-Z or ±1 V at 50 Ω; the same PyRPL command need not give the same physical volts. Keep ADC readings unclipped. This cell only defines local settings and an optional scope helper."
    ]
   },
   {
@@ -205,6 +205,7 @@
    "metadata": {},
    "outputs": [],
    "source": [
+    "import time\n",
     "import numpy as np\n",
     "import matplotlib.pyplot as plt\n",
     "\n",
@@ -262,238 +263,316 @@
   },
   {
    "cell_type": "markdown",
-   "id": "template-asg-note",
+   "id": "signal-dc-setup-note",
    "metadata": {},
    "source": [
-    "## 8. Generate and measure a small sine\n",
+    "## 8. Test 1: configure the DC source\n",
     "\n",
-    "Connect the selected OUT to the selected IN (LV) and an external instrument with the recorded termination. This enables a 1 kHz sine at amplitude 0.05 in PyRPL units. The output stays enabled until step 10; measure physical amplitude/offset before continuing."
+    "PID0 drives OUT1 with P=I=0 and adjustable integrator memory. PID1 reads IN1 without driving an output; this is the same DC-source arrangement used on Gen 1."
    ]
   },
   {
    "cell_type": "code",
    "execution_count": null,
-   "id": "template-asg",
+   "id": "signal-dc-setup",
    "metadata": {},
    "outputs": [],
    "source": [
-    "asg.setup(waveform=\"sin\", frequency=1000, amplitude=0.05,\n",
-    "          offset=0, trigger_source=\"immediately\", output_direct=\"off\")\n",
-    "asg.output_direct = physical_output\n",
-    "print(\"Enabled\", physical_output, \"at 1 kHz; recorded load:\", OUTPUT_LOAD)"
+    "src = rp.pid0\n",
+    "src.output_direct = \"off\"\n",
+    "src.input = \"in1\"\n",
+    "src.p = 0\n",
+    "src.i = 0\n",
+    "src.setpoint = 0\n",
+    "src.ival = 0\n",
+    "src.min_voltage = -0.99\n",
+    "src.max_voltage = 0.99\n",
+    "src.inputfilter = [0, 0, 0]\n",
+    "src.use_setpoint_sequence = False\n",
+    "src.paused = False\n",
+    "\n",
+    "mon = rp.pid1\n",
+    "mon.input = \"in1\"\n",
+    "mon.output_direct = \"off\"\n",
+    "mon.p = 1\n",
+    "mon.i = 0\n",
+    "mon.setpoint = 0\n",
+    "mon.ival = 0\n",
+    "mon.min_voltage = -0.99\n",
+    "mon.max_voltage = 0.99\n",
+    "mon.inputfilter = [0, 0, 0]\n",
+    "mon.use_setpoint_sequence = False\n",
+    "mon.paused = False\n",
+    "src.output_direct = \"out1\""
    ]
   },
   {
    "cell_type": "markdown",
-   "id": "template-scope-note",
+   "id": "signal-dc-measure-note",
    "metadata": {},
    "source": [
-    "## 9. Compare ADC and internal ASG signals\n",
+    "## 9. Measure the five DC levels\n",
     "\n",
-    "Configures/acquires the scope, then computes a spectrum locally. Compare the captured input with the external instrument; their ratio depends on termination and calibration, so it is not silently corrected."
+    "At each of the same five commands, read the Rigol DC voltage and enter it in volts. The table preserves both RP readbacks and the physical measurement; do not enter the old Gen 1 values. On completion or interruption, the DC output is disconnected."
    ]
   },
   {
    "cell_type": "code",
    "execution_count": null,
-   "id": "template-scope",
+   "id": "signal-dc-measure",
    "metadata": {},
    "outputs": [],
    "source": [
-    "times, trace = capture_scope(physical_input, \"asg0\")\n",
-    "frequency = np.fft.rfftfreq(trace.shape[1], times[1] - times[0])\n",
-    "spectrum = np.abs(np.fft.rfft(trace[0] - np.mean(trace[0])))\n",
-    "peak = 1 + np.argmax(spectrum[1:])\n",
-    "print(\"Measured input frequency [Hz]:\", frequency[peak])\n",
-    "fig, ax = plt.subplots()\n",
-    "ax.plot(frequency, spectrum)\n",
-    "ax.set(xlabel=\"Frequency [Hz]\", ylabel=\"FFT magnitude (not calibrated PSD)\",\n",
-    "       xlim=(0, 5000))\n",
-    "plt.show()"
+    "DC_COMMANDS = [-0.5, -0.25, 0.0, 0.25, 0.5]\n",
+    "dc_rows = []\n",
+    "src.output_direct = \"out1\"\n",
+    "try:\n",
+    "    for command in DC_COMMANDS:\n",
+    "        src.ival = command\n",
+    "        time.sleep(0.3)\n",
+    "        rigol_volts = float(input(f\"Command {command:+.2f}: Rigol DC voltage [V]: \"))\n",
+    "        if not np.isfinite(rigol_volts):\n",
+    "            raise ValueError(\"Enter a finite measured voltage.\")\n",
+    "        row = {\n",
+    "            \"command\": command,\n",
+    "            \"rp_output\": float(src.current_output_signal),\n",
+    "            \"rp_in1\": float(rp.scope.voltage_in1),\n",
+    "            \"rp_pid1\": float(mon.current_output_signal),\n",
+    "            \"rigol_volts\": rigol_volts,\n",
+    "        }\n",
+    "        dc_rows.append(row)\n",
+    "        print(json.dumps(row))\n",
+    "finally:\n",
+    "    src.ival = 0\n",
+    "    src.output_direct = \"off\"\n",
+    "print(json.dumps(dc_rows, indent=2))"
    ]
   },
   {
    "cell_type": "markdown",
-   "id": "template-asg-off-note",
+   "id": "signal-dc-fit-note",
    "metadata": {},
    "source": [
-    "## 10. Disconnect the ASG output\n",
+    "## 10. Fit this board's output and input separately\n",
     "\n",
-    "Disables the physical ASG route. The following PID tests use internal signals only."
+    "Calculate volts = gain × RP readback + offset for OUT1 and IN1, with RMS residuals. These are notebook-only conversions; no driver calibration changes. The PID setpoint uses the IN1 fit, not the output fit."
    ]
   },
   {
    "cell_type": "code",
    "execution_count": null,
-   "id": "template-asg-off",
+   "id": "signal-dc-fit",
    "metadata": {},
    "outputs": [],
    "source": [
+    "def fit_dc_calibration(rows):\n",
+    "    data = np.asarray([[r[\"rp_output\"], r[\"rp_in1\"], r[\"rigol_volts\"]]\n",
+    "                       for r in rows], dtype=float)\n",
+    "    if data.ndim != 2 or data.shape[0] < 3 or data.shape[1] != 3:\n",
+    "        raise ValueError(\"At least three paired DC measurements are needed.\")\n",
+    "    if not np.isfinite(data).all():\n",
+    "        raise ValueError(\"DC measurements must be finite.\")\n",
+    "    fits = []\n",
+    "    for column in (0, 1):\n",
+    "        x, y = data[:, column], data[:, 2]\n",
+    "        if np.ptp(x) == 0:\n",
+    "            raise ValueError(\"Readback did not change across DC levels; inspect wiring/range.\")\n",
+    "        gain, offset = np.polyfit(x, y, 1)\n",
+    "        if np.isclose(gain, 0):\n",
+    "            raise ValueError(\"Measured gain is zero; inspect measurements before inversion.\")\n",
+    "        rms = float(np.sqrt(np.mean((y - (gain * x + offset)) ** 2)))\n",
+    "        fits.append((float(gain), float(offset), rms))\n",
+    "    return fits\n",
+    "\n",
+    "out_fit, in_fit = fit_dc_calibration(dc_rows)\n",
+    "RP_OUT_TO_RIGOL_GAIN, RP_OUT_TO_RIGOL_OFFSET, out_rms = out_fit\n",
+    "RP_IN1_TO_RIGOL_GAIN, RP_IN1_TO_RIGOL_OFFSET, in_rms = in_fit\n",
+    "\n",
+    "def rp_to_rigol(value):\n",
+    "    return RP_OUT_TO_RIGOL_GAIN * value + RP_OUT_TO_RIGOL_OFFSET\n",
+    "\n",
+    "def rigol_to_rp(value):\n",
+    "    return (value - RP_OUT_TO_RIGOL_OFFSET) / RP_OUT_TO_RIGOL_GAIN\n",
+    "\n",
+    "def rp_in1_to_rigol(value):\n",
+    "    return RP_IN1_TO_RIGOL_GAIN * value + RP_IN1_TO_RIGOL_OFFSET\n",
+    "\n",
+    "def rigol_to_rp_in1(value):\n",
+    "    return (value - RP_IN1_TO_RIGOL_OFFSET) / RP_IN1_TO_RIGOL_GAIN\n",
+    "\n",
+    "print(\"OUT1 fit (gain, offset V, RMS V):\", out_fit)\n",
+    "print(\"IN1  fit (gain, offset V, RMS V):\", in_fit)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "signal-triangle-note",
+   "metadata": {},
+   "source": [
+    "## 11. Test 2a: 1 Hz triangle\n",
+    "\n",
+    "The user confirmed both 1 Hz and 1 kHz worked on Gen 1. Start with its saved 1 Hz / amplitude 0.4 setting, then repeat at 1 kHz in step 13b. PID0 is disconnected; ASG0 drives OUT1. Record Rigol frequency, minimum, maximum, Vpp and RMS."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "signal-triangle",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "rp.pid0.output_direct = \"off\"\n",
+    "asg = rp.asg0\n",
     "asg.output_direct = \"off\"\n",
-    "print(\"ASG physical output disconnected.\")"
+    "asg.waveform = \"ramp\"\n",
+    "asg.frequency = 1.0  # Hz, matching the saved Gen 1 code.\n",
+    "asg.amplitude = 0.4\n",
+    "asg.offset = 0.0\n",
+    "asg.trigger_source = \"immediately\"\n",
+    "asg.output_direct = \"out1\"\n",
+    "print(\"ASG frequency [Hz]:\", asg.frequency)\n",
+    "print(\"ASG amplitude [RP units]:\", asg.amplitude)"
    ]
   },
   {
    "cell_type": "markdown",
-   "id": "template-pid-note",
+   "id": "signal-poll-note",
    "metadata": {},
    "source": [
-    "## 11. Exercise the proportional path\n",
+    "## 12. Record the input trace\n",
     "\n",
-    "Configures PID0 with an internal ASG input and no physical output. Record whether the PID trace follows half the ASG signal. This is the original, unrepaired RTL under a new toolchain; a failure is a baseline finding, not a reason to apply fixes during this test."
+    "Collect the same 5,000 software-polled IN1 readings. Record elapsed time as well: sleep plus SSH overhead is not a uniform sample interval. Compare amplitude/offset with the Rigol; the polled mean alone is not a DC calibration."
    ]
   },
   {
    "cell_type": "code",
    "execution_count": null,
-   "id": "template-pid",
+   "id": "signal-poll",
    "metadata": {},
    "outputs": [],
    "source": [
-    "pid.setup(input=\"asg0\", output_direct=\"off\", p=0.5, i=0,\n",
-    "          setpoint=0, inputfilter=0, min_voltage=-0.2, max_voltage=0.2,\n",
-    "          pause_gains=\"pi\", paused=False, differential_mode_enabled=False)\n",
-    "pid.use_setpoint_sequence = False\n",
-    "pid.ival = 0\n",
-    "times, proportional_trace = capture_scope(\"asg0\", \"pid0\")"
+    "vals, sample_times = [], []\n",
+    "start = time.perf_counter()\n",
+    "for _ in range(5000):\n",
+    "    vals.append(rp.scope.voltage_in1)\n",
+    "    sample_times.append(time.perf_counter() - start)\n",
+    "    time.sleep(0.0005)\n",
+    "vals = np.asarray(vals)\n",
+    "sample_times = np.asarray(sample_times)\n",
+    "print(\"RP mean =\", np.mean(vals))\n",
+    "print(\"RP min =\", np.min(vals))\n",
+    "print(\"RP max =\", np.max(vals))\n",
+    "print(\"RP Vpp =\", np.ptp(vals))\n",
+    "print(\"Elapsed [s] =\", sample_times[-1])"
    ]
   },
   {
    "cell_type": "markdown",
-   "id": "template-hold-note",
+   "id": "signal-plot-note",
    "metadata": {},
    "source": [
-    "## 12. Check hold and release\n",
+    "## 13. Plot and note the external measurement\n",
     "\n",
-    "Pauses PID0 while its input sine continues, then releases it. During hold the PID trace should keep its last value, including the proportional contribution; after release it should follow the input again."
+    "Plot the captured triangle against actual read times. Enter the Rigol observations below the plot so the local notebook retains the external evidence too."
    ]
   },
   {
    "cell_type": "code",
    "execution_count": null,
-   "id": "template-hold",
+   "id": "signal-plot",
    "metadata": {},
    "outputs": [],
    "source": [
-    "pid.paused = True\n",
+    "fig, ax = plt.subplots()\n",
+    "ax.plot(sample_times, vals)\n",
+    "ax.set(xlabel=\"Elapsed [s]\", ylabel=\"IN1 [PyRPL units]\")\n",
+    "plt.show()\n",
+    "triangle_observation = input(\"Rigol frequency / Min / Max / Vpp / RMS and observations: \")\n",
+    "print(\"Triangle observation:\", triangle_observation)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "signal-fast-triangle-note",
+   "metadata": {},
+   "source": [
+    "## 13b. Test 2b: 1 kHz triangle\n",
+    "\n",
+    "Repeat the same amplitude at 1 kHz. Use hardware-buffered RP scope acquisition plus the Rigol, not the slow polled trace above. After recording the observation, this cell restores 1 Hz for the saved Gen 1 PID-disturbance condition."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "id": "signal-fast-triangle",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "asg.frequency = 1000.0  # Hz\n",
     "try:\n",
-    "    times, held_trace = capture_scope(\"asg0\", \"pid0\")\n",
+    "    print(\"ASG frequency [Hz]:\", asg.frequency)\n",
+    "    fast_times, fast_data = capture_scope(\"in1\", \"asg0\", duration=0.01)\n",
+    "    fast_triangle_observation = input(\"Rigol 1 kHz frequency / Min / Max / Vpp / RMS and observations: \")\n",
+    "    print(\"1 kHz triangle observation:\", fast_triangle_observation)\n",
     "finally:\n",
-    "    pid.paused = False\n",
-    "times, released_trace = capture_scope(\"asg0\", \"pid0\")"
+    "    asg.frequency = 1.0  # Restore the saved Gen 1 PID disturbance setting."
    ]
   },
   {
    "cell_type": "markdown",
-   "id": "template-integrator-note",
+   "id": "signal-pid-note",
    "metadata": {},
    "source": [
-    "## 13. Exercise the integrator path\n",
+    "## 14. Test 3: negative-I feedback with the ASG disturbance\n",
     "\n",
-    "Temporarily sets I=100 Hz and P=0, with the existing ±0.2 internal output limits. Observe the phase/amplitude against the sine; the cell then clears the integrator and restores the proportional test."
+    "Repeat P=0, I=-150000 and a 0.5 V target using this board's IN1 calibration. As in the saved Gen 1 run, ASG0 stays routed to OUT1, summing its triangle with PID0 as a disturbance. The printed corrected setpoint is a calculation, not the measured output."
    ]
   },
   {
    "cell_type": "code",
    "execution_count": null,
-   "id": "template-integrator",
+   "id": "signal-pid",
    "metadata": {},
    "outputs": [],
    "source": [
-    "pid.p = 0\n",
-    "pid.ival = 0\n",
-    "pid.i = 100\n",
-    "try:\n",
-    "    times, integral_trace = capture_scope(\"asg0\", \"pid0\")\n",
-    "finally:\n",
-    "    pid.i = 0\n",
-    "    pid.ival = 0\n",
-    "    pid.p = 0.5"
-   ]
-  },
-  {
-   "cell_type": "markdown",
-   "id": "template-sequence-note",
-   "metadata": {},
-   "source": [
-    "## 14. Write and step all 16 setpoints\n",
-    "\n",
-    "Writes a small signed sequence and advances it with software pulses, checking index, signed readback, and wrap. Keep DIO3_P low during this step. This checks the register path, not the physical TTL input."
-   ]
-  },
-  {
-   "cell_type": "code",
-   "execution_count": null,
-   "id": "template-sequence",
-   "metadata": {},
-   "outputs": [],
-   "source": [
-    "asg.setup(waveform=\"dc\", amplitude=0, offset=0, output_direct=\"off\",\n",
-    "          trigger_source=\"immediately\")\n",
-    "sequence = np.linspace(-0.05, 0.05, 16)\n",
-    "pid.paused = True\n",
-    "pid.set_setpoint_array(sequence)\n",
-    "pid.reset_sequence_index()\n",
-    "pid.use_setpoint_sequence = True\n",
+    "pid = rp.pid0\n",
+    "pid.output_direct = \"off\"\n",
+    "pid.input = \"in1\"\n",
+    "pid.min_voltage, pid.max_voltage = -1, 1\n",
+    "pid.pause_gains = \"pi\"\n",
     "pid.paused = False\n",
-    "sequence_results = []\n",
-    "for step in range(17):\n",
-    "    index = int(pid.setpoint_index)\n",
-    "    value = float(pid.setpoint_in_sequence)\n",
-    "    expected_index = step % 16\n",
-    "    expected_value = round(float(sequence[expected_index]) * 8192) / 8192\n",
-    "    row = {\"step\": step, \"index\": index, \"setpoint\": value,\n",
-    "           \"expected\": expected_value, \"wrap\": bool(pid.sequence_wrap_flag)}\n",
-    "    sequence_results.append(row)\n",
-    "    print(row)\n",
-    "    assert index == expected_index and value == expected_value, row\n",
-    "    assert row[\"wrap\"] == (step == 16), row\n",
-    "    if step < 16:\n",
-    "        pid.manually_change_setpoint()"
+    "pid.use_setpoint_sequence = False\n",
+    "pid.p = 0\n",
+    "pid.i = -150000\n",
+    "pid.ival = 0\n",
+    "desired_scope_voltage = 0.5\n",
+    "pid.setpoint = rigol_to_rp_in1(desired_scope_voltage)\n",
+    "pid.output_direct = \"out1\"\n",
+    "print(\"raw RP setpoint =\", pid.setpoint)\n",
+    "print(\"scope-corrected setpoint =\", rp_in1_to_rigol(pid.setpoint))\n",
+    "print(\"ASG disturbance route:\", asg.output_direct)"
    ]
   },
   {
    "cell_type": "markdown",
-   "id": "template-ttl-note",
+   "id": "signal-pid-observe-note",
    "metadata": {},
    "source": [
-    "## 15. Check the external TTL inputs\n",
+    "## 15. Record the physical feedback result\n",
     "\n",
-    "Use a common ground and 3.3 V logic: DIO3_P rising edges advance PID0's sequence; DIO0_P high holds PID0. Apply pulses and rerun this cell to inspect state/trace. For hold, step the sequence while DIO0_P is high, then release it. All fast-output routes remain disconnected."
+    "Observe the Rigol before continuing: mean voltage, remaining ripple, clipping/oscillation and stability. This records the measurement separately from the calculated setpoint."
    ]
   },
   {
    "cell_type": "code",
    "execution_count": null,
-   "id": "template-ttl",
+   "id": "signal-pid-observe",
    "metadata": {},
    "outputs": [],
    "source": [
-    "print(\"Sequence index:\", pid.setpoint_index,\n",
-    "      \"setpoint:\", pid.setpoint_in_sequence,\n",
-    "      \"wrap:\", pid.sequence_wrap_flag)\n",
-    "times, ttl_trace = capture_scope(\"asg0\", \"pid0\", duration=0.1)"
-   ]
-  },
-  {
-   "cell_type": "markdown",
-   "id": "template-slow-note",
-   "metadata": {},
-   "source": [
-    "## 16. Inspect slow analog inputs\n",
-    "\n",
-    "Enables automatic XADC conversion and reads the four inputs. Apply known voltages to the channels being used and compare with an external meter. Do not infer slow-output scaling from this input test."
-   ]
-  },
-  {
-   "cell_type": "code",
-   "execution_count": null,
-   "id": "template-slow",
-   "metadata": {},
-   "outputs": [],
-   "source": [
-    "rp.ams.trigger_source = \"auto\"\n",
-    "print(\"Slow analog inputs (PyRPL units):\", rp.ams.vadcs)"
+    "pid_observation = input(\"Rigol PID mean / ripple / stability and observations: \")\n",
+    "print(\"PID observation:\", pid_observation)\n",
+    "print(\"RP IN1 readback =\", rp.scope.voltage_in1)"
    ]
   },
   {
@@ -501,9 +580,9 @@
    "id": "template-cleanup-note",
    "metadata": {},
    "source": [
-    "## 17. End the bench signal configuration\n",
+    "## 16. Turn off direct outputs\n",
     "\n",
-    "Stops acquisition, clears the tested PID's gains/integrator, disables sequence mode and ASG generation, and leaves fast-output routes disconnected. It does not restore earlier experiment settings."
+    "Disconnect direct outputs as in the Gen 1 notebook. Missing modules are skipped explicitly; the FPGA remains programmed."
    ]
   },
   {
@@ -513,19 +592,13 @@
    "metadata": {},
    "outputs": [],
    "source": [
-    "scope.stop()\n",
-    "pid.use_setpoint_sequence = False\n",
-    "pid.p = 0\n",
-    "pid.i = 0\n",
-    "pid.ival = 0\n",
-    "pid.setpoint = 0\n",
-    "pid.paused = False\n",
-    "asg.amplitude = 0\n",
-    "asg.offset = 0\n",
-    "asg.trigger_source = \"off\"\n",
-    "for name in (\"asg0\", \"asg1\", \"pid0\", \"pid1\", \"pid2\",\n",
-    "             \"iq0\", \"iq1\", \"iq2\", \"trig0\", \"trig1\"):\n",
-    "    getattr(rp, name).output_direct = \"off\""
+    "for name in (\"asg0\", \"asg1\", \"pid0\", \"pid1\", \"pid2\", \"iq0\", \"iq1\", \"iq2\", \"iir\", \"trig0\", \"trig1\"):\n",
+    "    module = getattr(rp, name, None)\n",
+    "    if module is None:\n",
+    "        print(name, \"not present\")\n",
+    "        continue\n",
+    "    module.output_direct = \"off\"\n",
+    "    print(name, \"-> off\")"
    ]
   },
   {
@@ -533,9 +606,9 @@
    "id": "template-reconnect-note",
    "metadata": {},
    "source": [
-    "## 18. Reconnect without reprogramming\n",
+    "## 17. Optional reconnect\n",
     "\n",
-    "Closes this PyRPL instance (including its server), then starts/connects again with both reload requests disabled. This still starts a monitor server and applies module settings; it is not read-only."
+    "Only if you want a separate reconnection check after the signal tests: close this PyRPL instance and reconnect without programming. Saved module settings are reapplied."
    ]
   },
   {
@@ -559,9 +632,9 @@
    "id": "template-results-note",
    "metadata": {},
    "source": [
-    "## Remaining measurements\n",
+    "## Results\n",
     "\n",
-    "Record physical amplitude/offset, termination, input jumper, instrument, test duration and observations in this local notebook. Closed-loop performance, high-speed TTL timing, slow outputs, and long-duration/GUI operation still need their own bench measurements. The internal traces and FFT above do not establish those results."
+    "Save this local notebook with the paired DC table, the new fits, the triangle trace and the Rigol observations. Passing this limited repeat is not a timing-closure result. TTL/hold/sequence, slow analog and bandwidth measurements are separate tests."
    ]
   }
  ],

@@ -294,3 +294,18 @@ This does not claim oscilloscope/analog validation or change the retained
 simulation/timing findings. No compatibility main is advanced. At the user's
 request, commit this work before returning to the existing `gen1-os2/main`
 for their next physical signal tests; do not import common repairs there.
+
+### Repeat the successful Gen 1 signal experiment — 2026-09-15
+
+After the user's Gen 1 DC / triangle / negative-I PID run, the tracked starter
+and local Pro copy now repeat that focused workflow, including both 1 Hz and
+1 kHz triangles as clarified by the user. The saved Gen 1 plot documents 1 Hz;
+the additional 1 kHz success is user-reported. Fresh board-specific IN1/OUT1
+calibration replaces the Gen 1 coefficients. The ASG remains a summed PID
+disturbance as in the saved experiment; measured response and calculated
+setpoint are recorded separately.
+
+See [the Gen 1 result](gen1-os2-signal-field-result-20260915.md) and
+[Pro preparation/validation](z7020-signal-repeat-preparation.md). The unchanged
+image is still the original-logic `779a031` candidate. No live cells were run;
+73 offline unittests, 25 Nose tests and fresh package validation passed.

@@ -29,7 +29,8 @@
 - The user will program the device. Do not execute the notebook, upload,
   start a server or program the board while preparing it. Preserve existing
   local notebook results in a byte-identical backup before preparing its
-  new local test copy; keep passwords out of the new copy/template.
+  new local test copy. The user permits their factory-default password in the
+  ignored local notebook; preserve it. Keep the tracked template password-free.
 
 ## Scope
 
@@ -169,6 +170,10 @@
   Preserve its settings and saved outputs. Never stage it or overwrite it
   during template updates. Do not run it or change its contents unless the
   user explicitly requests notebook/device work.
+- The current manual workflow repeats the user's Gen 1 DC calibration,
+  1 Hz / 1 kHz triangle and negative-I PID experiment on Pro. Do not reuse Gen 1
+  calibration coefficients: derive separate OUT1 and IN1 fits from fresh
+  paired RP/Rigol readings. Preserve ASG-as-disturbance during the PID step.
 - Keep agent-only investigation scripts and notes under `.agents/`, outside
   the package and user-facing test areas. Automated product regressions still
   belong in `pyrpl/test` or `tests`; do not confuse them with disposable agent
