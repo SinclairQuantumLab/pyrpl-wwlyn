@@ -57,7 +57,61 @@
   have a separate target, filename and provenance. Do not enable its loader
   profile merely because RTL simulation or synthesis succeeds.
 
+## Common-policy comparison
+
+- At the start of each new agent/thread working on this repository, and
+  after a clone, fetch or pull, compare the common AGENTS.md policies across
+  all available local branches and remote-tracking branches before making
+  changes. Repeat after branch/worktree switches or common-policy edits.
+- Enumerate refs with `git for-each-ref refs/heads refs/remotes` and read
+  instruction files with `git show <ref>:AGENTS.md`, without checking out
+  other branches. Deduplicate identical file blobs; inspect referenced
+  common-policy files too if the guidance has been split. Include the
+  current checkout's uncommitted instructions without discarding them.
+- This check covers locally available refs, not unseen remote branches.
+  Do not fetch/pull merely to perform it. Note missing instructions or
+  limited/shallow history when relevant; absence is not permission to
+  ignore known user policies. Keep the check lightweight: no test suites
+  and no repeated full scan each turn unless refs or policies changed.
+- Before an agent switches branches, record the source branch/commit and any
+  uncommitted instruction changes. After switching, reread the destination's
+  AGENTS.md and compare its common policies with the source; use read-only
+  Git diffs rather than switching other worktrees to inspect them.
+- When starting work in another existing worktree, compare common policies
+  with the previously used checkout when known. After editing common policy,
+  identify which active compatibility branches still need that update.
+- Compare shared workflow rules only (permissions, worktree management,
+  branching, notebook preservation and validation proportionality). Preserve
+  device/OS-specific instructions, FPGA constraints and validation evidence.
+  A later timestamp or commit alone does not establish which policy is right.
+- Report missing or conflicting common rules and reconcile them in the
+  current task's authorized scope. Do not overwrite entire AGENTS.md files,
+  modify another worker's files, or automatically commit/update all branches.
+  Cross-branch propagation and hook installation require explicit approval.
+  This is an agent workflow rule, not an installed Git hook.
+
 ## Branching
+
+- Authorized local layout: the primary checkout serves
+  `gen2-pro-os2/feature/device-upgrade`; `.worktrees/gen1-os2` serves
+  `gen1-os2/main`, with its own environment and local notebook. The external
+  `working-vs1` worktree belongs to another worker and must remain untouched.
+- Recommend persistent device/OS worktrees under one contained directory,
+  such as `.worktrees/<genX-osY>/`, rather than scattered project folders.
+  Each worktree should have its own `.venv` and ignored local notebook.
+  Document this convention here; do not add bootstrap scripts or create/move
+  worktrees without an explicit request. Preserve existing worktrees and
+  their local files. Git clones reproduce committed guidance and published
+  branches, not local worktree layouts, environments or ignored notebooks.
+- This contained device/OS worktree layout is intentional, not permission
+  for agents to create arbitrary additional worktrees. Existing worktrees
+  do not imply authorization to add more. Creating, moving, removing or
+  reorganizing worktrees requires the user's explicit approval; use the
+  appropriate existing worktree for ordinary development.
+- Scale validation to the task. Commit-only requests require diff/staging
+  review, not test reruns. Minor changes need only directly relevant checks.
+  The full validation checklist below is for substantive implementation or
+  release work, or an explicit request, not every handoff or branch operation.
 
 - `develop` is the integration branch for changes that apply across device/OS
   combinations. Common work uses standard topic namespaces such as
