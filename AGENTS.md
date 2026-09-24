@@ -1,5 +1,19 @@
 # PyRPL fork agent guidance
 
+## Notebook version control (2026-09-24)
+
+- The user explicitly requested version control for `test.ipynb` across all
+  fork branches. Keep it unignored and commit the branch's own notebook;
+  where none is tracked, use that branch's template if one exists. Do not
+  copy another device/OS branch's notebook into it.
+- Preserve notebook settings, measurements and saved outputs. Do not reset,
+  sanitize, replace or execute a notebook without a specific user request.
+  Tracking a notebook does not authorize contacting or programming hardware.
+- Keep any `test.ipynb.template` as a clean starter. Never overwrite an
+  existing working notebook when updating a template or switching branches.
+- This request supersedes older ignored/local-only and never-stage notebook
+  guidance below. Other workers' working directories remain untouched.
+
 ## Repaired Gen1 hardware-test preparation (2026-09-24)
 
 - The user authorized preparing both `gen1-os1/develop` and
@@ -14,7 +28,7 @@
 - Build/tool-version adaptations and open timing findings are recorded in
   `pyrpl/fpga/targets/z10_gen1/README.md` and
   `.agents/z7010-repaired-build-evidence.json`. Live tests remain for the user.
-- Preserve ignored notebooks and other workers' checkouts. Inspect actual
+- Preserve notebooks and other workers' checkouts. Inspect actual
   `git worktree list` state instead of assuming the historical layout below
   is still checked out on those branches.
 
@@ -96,7 +110,7 @@
   `working-vs1` worktree belongs to another worker and must remain untouched.
 - Recommend persistent device/OS worktrees under one contained directory,
   such as `.worktrees/<genX-osY>/`, rather than scattered project folders.
-  Each worktree should have its own `.venv` and ignored local notebook.
+  Each worktree should have its own `.venv` and notebook working copy.
   Document this convention here; do not add bootstrap scripts or create/move
   worktrees without an explicit request. Preserve existing worktrees and
   their local files. Git clones reproduce committed guidance and published
@@ -209,10 +223,11 @@
 - `test.ipynb.template` is the tracked user-facing manual/live-device starter.
   Put user-run steps there with brief Markdown explanations. Keep it free of
   saved outputs, device-specific addresses, and passwords.
-- `test.ipynb` is the ignored local working copy, created from the template.
-  Preserve its settings and saved outputs. Never stage it or overwrite it
-  during template updates. Do not run it or change its contents unless the
-  user explicitly requests notebook/device work.
+- The user requested that `test.ipynb` no longer be ignored (2026-09-24).
+  It is versioned on this branch. Preserve its settings
+  and saved outputs; do not overwrite it during template updates. Do not run
+  it or change its contents unless the user requests notebook/device work.
+  Keep `test.ipynb.template` as the clean starter for new notebooks.
 - Keep agent-only investigation scripts and notes under `.agents/`, outside
   the package and user-facing test areas. Automated product regressions still
   belong in `pyrpl/test` or `tests`; do not confuse them with disposable agent

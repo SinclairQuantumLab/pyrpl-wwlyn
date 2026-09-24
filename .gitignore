@@ -99,7 +99,6 @@ target/
 
 #Ipython Notebook
 .ipynb_checkpoints
-/test.ipynb
 
 
 #notebooks
@@ -138,3 +137,5 @@ unit_tests.xml
 unit_test_results.xml
 unit_test_coverage.xml
 
+# Keep the branch-specific working notebook in version control.
+!/test.ipynb
