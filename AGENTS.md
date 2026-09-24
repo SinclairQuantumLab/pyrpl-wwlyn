@@ -1,5 +1,23 @@
 # PyRPL fork agent guidance
 
+## Repaired Gen1 hardware-test preparation (2026-09-24)
+
+- The user authorized preparing both `gen1-os1/develop` and
+  `gen1-os2/develop` for testing the common repair. The separate
+  `red_pitaya_z10_gen1_repaired.bin` is built from exact `e747916` RTL
+  with the original Gen1 platform, not the Z7020 Pro PS shell.
+- This extends the earlier source-only integration authorization to a
+  separately named, hash-pinned bench candidate. Do not replace the author
+  BIN, modify the existing OS2 DTBOs, promote mains or claim hardware success.
+  The template explicitly selects the repaired image; existing defaults
+  still select the original. No timing fix, latency or clock changes.
+- Build/tool-version adaptations and open timing findings are recorded in
+  `pyrpl/fpga/targets/z10_gen1/README.md` and
+  `.agents/z7010-repaired-build-evidence.json`. Live tests remain for the user.
+- Preserve ignored notebooks and other workers' checkouts. Inspect actual
+  `git worktree list` state instead of assuming the historical layout below
+  is still checked out on those branches.
+
 ## Shared PID source integration (2026-09-24)
 
 - This develop branch directly integrates `fix/pid-rtl-shadowing` at

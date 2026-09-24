@@ -23,6 +23,9 @@ from .pyrpl_utils import get_unique_name_list_from_class_list, update_with_typec
 from .memory import MemoryTree
 from .errors import ExpectedPyrplError
 from .widgets.startup_widget import HostnameSelectorWidget
+from .z10_repaired import (Z10_REPAIRED_BITSTREAM_FILENAME,
+                           Z10_REPAIRED_BITSTREAM_SHA256, REPAIRED_RTL_COMMIT,
+                           legacy_preflight, is_repaired_selection)
 
 import hashlib
 import logging
@@ -579,11 +582,11 @@ class RedPitaya(object):
     def _validate_os2_bitstream(source):
         with open(source, 'rb') as source_file:
             digest = hashlib.sha256(source_file.read()).hexdigest()
-        if digest != FORK_BITSTREAM_SHA256:
+        if digest not in (FORK_BITSTREAM_SHA256, Z10_REPAIRED_BITSTREAM_SHA256):
             raise OSError(
-                'The OS 2 bitstream does not match this fork\'s preserved '
-                'FPGA image (expected SHA-256 %s, got %s): %s' %
-                (FORK_BITSTREAM_SHA256, digest, source))
+                'The OS 2 bitstream does not match this fork\'s preserved FPGA image '
+                'or approved repaired Gen1 candidate (got SHA-256 %s): %s' %
+                (digest, source))
 
     @staticmethod
     def _file_sha256(source):
@@ -598,7 +601,8 @@ class RedPitaya(object):
         source = self._local_fpga_file(
             bitstream_name, 'FPGA bitstream',
             package_relative=(
-                bitstream_name == defaultparameters['filename']))
+                bitstream_name in (defaultparameters['filename'],
+                                   Z10_REPAIRED_BITSTREAM_FILENAME)))
         dtbo_source = None
         profile = None
         if self.fpga_loader == 'overlay':
@@ -623,6 +627,8 @@ class RedPitaya(object):
                 server_directory, self.os2_fpga_filename)
             dtbo_file_path = '/opt/pyrpl/fpga.dtbo'
         else:
+            if is_repaired_selection(source):
+                legacy_preflight(self, source)
             server_directory = self.parameters['serverdirname']
             bin_file_path = self._server_file(
                 server_directory, self.parameters['serverbinfilename'])
@@ -698,6 +704,11 @@ class RedPitaya(object):
             'remote_dtbo': prepared['dtbo_file_path'],
         }
         report.update(self._read_fpga_preflight_state())
+        repaired = report['local_bitstream_sha256'] == Z10_REPAIRED_BITSTREAM_SHA256
+        report['bitstream_lineage'] = 'common-pid-repaired' if repaired else 'preserved-author'
+        report['repaired_rtl_commit'] = REPAIRED_RTL_COMMIT if repaired else None
+        if repaired:
+            report['timing_closed'] = False
         return report
 
     def put_file(self, source, destination):
