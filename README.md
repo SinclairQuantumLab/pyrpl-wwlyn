@@ -15,20 +15,27 @@
 
 PyRPL (Python RedPitaya Lockbox) turns your RedPitaya into a powerful DSP device, especially suitable as a digital lockbox and measurement device in quantum optics experiments.
 
-## Accepted device baseline (2026-09-24)
+## Repaired Pro development candidate (2026-09-24)
 
-`gen2pro-os2/main` records the user's successful real-device testing and acceptance
-of the original-logic baseline. The shared PID/filter repairs remain on
-`gen2pro-os2/develop`, not this main. See the
+This branch, `gen2pro-os2/develop`, combines the tested Pro platform with the
+shared PID/filter repairs. Its separately named image is
+`red_pitaya_z20_gen2_repaired.bit.bin`; hardware validation is pending.
+`gen2pro-os2/main` retains the user's accepted original-logic baseline. See the
 [acceptance record](.agents/pre-repair-main-acceptance-20260924.md) for source
 snapshots, previous observations and evidence limits. This is user-reported
 acceptance, not a new agent-run test or proof of timing closure. Older
 pending-field-test statements below describe earlier development stages.
 
-This Pro baseline uses the separately named
+The retained original-logic baseline uses the separately named
 `red_pitaya_z20_gen2_author.bit.bin` for exact profile 22 /
 `z20_125_v2` / Z7020. The default Z7010 image is not its replacement.
 The loader restrictions and original build-provenance record are unchanged.
+
+For the repaired device test, use `test.ipynb.template` (or the prepared local
+`test.ipynb`) on this develop branch. Restart the notebook kernel after changing
+branches. The notebook separately performs preflight, programming, connection
+and signal measurements. No timing repair, clock change or added pipeline stage
+is part of this candidate; see `.agents/z7020-repaired-test-preparation.md`.
 
 ## Website
 The official PyRPL website address is [http://pyrpl.readthedocs.io/](http://pyrpl.readthedocs.io). The information on the website is more up-to-date than in this readme.

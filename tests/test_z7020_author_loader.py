@@ -18,10 +18,15 @@ from pyrpl.test.test_redpitaya_fpga_loader import make_device
 
 
 class TestAuthorLoader(unittest.TestCase):
+    image_filename = redpitaya.Z20_AUTHOR_BITSTREAM_FILENAME
+    image_sha256 = redpitaya.Z20_AUTHOR_BITSTREAM_SHA256
+    lineage = 'no-common-fixes'
+    repaired = False
+
     @classmethod
     def setUpClass(cls):
         cls.image = (Path(redpitaya.__file__).parent /
-                     redpitaya.Z20_AUTHOR_BITSTREAM_FILENAME)
+                     cls.image_filename)
 
     def device(self, **kwargs):
         settings = dict(profile_id='22', profile_fpga='z20_125_v2',
@@ -39,7 +44,7 @@ class TestAuthorLoader(unittest.TestCase):
 
     def test_separate_image_is_packaged_and_hash_pinned(self):
         digest = hashlib.sha256(self.image.read_bytes()).hexdigest()
-        self.assertEqual(redpitaya.Z20_AUTHOR_BITSTREAM_SHA256, digest)
+        self.assertEqual(self.image_sha256, digest)
         self.assertNotEqual(redpitaya.FORK_BITSTREAM_SHA256, digest)
 
     def test_read_only_plan_selects_both_existing_firmware_name_contracts(self):
@@ -49,11 +54,12 @@ class TestAuthorLoader(unittest.TestCase):
                 report = device.preflight_fpga_update()
                 self.assertEqual('22', report['hardware_profile']['id'])
                 self.assertEqual('pro-z7020', report['hardware_profile']['variant'])
-                self.assertEqual(redpitaya.Z20_AUTHOR_BITSTREAM_SHA256,
+                self.assertEqual(self.image_sha256,
                                  report['local_bitstream_sha256'])
                 self.assertEqual(redpitaya.OS2_Z10_DTBO_SHA256[filename],
                                  report['local_dtbo_sha256'])
-                self.assertIn('no-common-fixes', report['artifact_lineage'])
+                self.assertIn(self.lineage, report['artifact_lineage'])
+                self.assertEqual(self.repaired, report['common_pid_filter_fixes_included'])
                 self.assertFalse(report['timing_closed'])
                 self.assert_no_mutation(device)
 
@@ -73,7 +79,7 @@ class TestAuthorLoader(unittest.TestCase):
 
     def test_packaged_image_does_not_depend_on_working_directory(self):
         device = self.device()
-        device.parameters['filename'] = redpitaya.Z20_AUTHOR_BITSTREAM_FILENAME
+        device.parameters['filename'] = self.image_filename
         previous = os.getcwd()
         with tempfile.TemporaryDirectory() as directory:
             try:

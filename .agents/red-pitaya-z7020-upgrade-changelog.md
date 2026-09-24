@@ -336,3 +336,19 @@ See [the Gen 1 result](gen1-os2-signal-field-result-20260915.md) and
 [Pro preparation/validation](z7020-signal-repeat-preparation.md). The unchanged
 image is still the original-logic `779a031` candidate. No live cells were run;
 73 offline unittests, 25 Nose tests and fresh package validation passed.
+
+## Repaired Pro develop device-test candidate — 2026-09-24
+
+The user now requests testing the common repairs, not repeating the accepted
+original-logic main. Merge `00df760` brings in the tested Pro platform while
+retaining exact shared repaired RTL `e747916`. A fresh full Vivado 2023.2
+build and normal DRC-enforced export produced the separate
+`red_pitaya_z20_gen2_repaired.bit.bin`; neither existing BIN nor either DTBO
+was replaced. Profile 22 is unchanged. The new hash is pinned in the loader.
+
+Real XSim passed (342 PID and five times 4,096 filter checks). Routing and
+bitstream export passed; timing remains unresolved (-4.369 ns setup WNS,
+-2.362 ns hold WHS). No timing redesign was attempted. Offline checks and
+fresh-package validation passed. Main is unchanged; no device was contacted.
+Full details: [repaired test preparation](z7020-repaired-test-preparation.md)
+and [build evidence](z7020-repaired-build-evidence.json).

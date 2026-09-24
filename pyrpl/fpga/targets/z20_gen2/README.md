@@ -8,12 +8,27 @@ It builds a new PS/AXI shell around the fork's existing top-level RTL. Outputs
 are checkpoints and reports in a new directory; it never calls the legacy
 Makefile and `build.tcl` never writes a BIN or DTBO.
 
-## Original-logic first-device test (2026-09-15)
+## Repaired-source follow-up test (2026-09-24)
 
-The user requires the first device test **before** common PID/filter repairs.
+On `gen2pro-os2/develop`, the user now authorizes the common repairs from
+`e747916` plus the already-tested Pro platform. `repaired_rtl.json` pins the
+entire repaired source tree; only the PID and filter files differ from the
+author manifest. No clocks, constraints, pipeline stages or platform sources
+are changed. The existing original-logic image remains available and unchanged.
+
+Run the normal full build below, then `export_repaired_test.tcl` with its fresh
+routed checkpoint and a new export directory. Convert `image.bif` with Bootgen
+to `red_pitaya_z20_gen2_repaired.bit.bin`. Record and pin that new image's hash
+before loading; never reuse an old routed checkpoint for this candidate.
+Normal bitstream DRC enforcement remains enabled. This is a device-test
+candidate, not timing sign-off or a promotion to main.
+
+## Historical original-logic first-device test (2026-09-15)
+
+The user required the first device test **before** common PID/filter repairs.
 `author_rtl.json` records every original RTL blob at wwlyn commit `387faf3`;
-`tests.test_z7020_author_baseline` rejects any RTL changes, including the
-earlier common repairs. Platform files remain the separately generated Pro
+The original-logic main retains that full-tree guard; this develop instead
+checks the repaired manifest. Platform files remain the separately generated Pro
 PS/AXI shell. No original Z7010 artifact is overwritten.
 
 The separately packaged `red_pitaya_z20_gen2_author.bit.bin` is an experimental
@@ -111,6 +126,6 @@ Still required before a commissioned release:
 4. Produce separately named BIN/DTBO artifacts with source/toolchain/hash
    provenance, then implement their paired loader selection and regressions.
 
-Keep the original Z7010 artifacts unchanged. Only the separately pinned
-experimental author image is accepted on profile 22. Hardware results and any
-compatibility-main promotion remain pending.
+Keep the original Z7010 artifacts unchanged. Both separately pinned Pro images
+are restricted to profile 22. The original-logic main has user acceptance;
+repaired-image hardware results and promotion remain pending.

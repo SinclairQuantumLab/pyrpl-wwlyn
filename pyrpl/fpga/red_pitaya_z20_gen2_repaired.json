@@ -1,0 +1,60 @@
+{
+  "kind": "experimental repaired-source device-test image; hardware test pending",
+  "date": "2026-09-24",
+  "part": "xc7z020clg400-1",
+  "rtl_commit": "e7479166c03c15bdd244e2153e974b4596815041",
+  "source_checkpoint": "00df760a052af4ba329daf6db4094f60c486e10b",
+  "platform_checkpoint": "30236009a517a032b22271a9cb2a3fed8aeb8419",
+  "common_pid_filter_fixes_included": true,
+  "historical_z7010_bin_equivalence_established": false,
+  "toolchain": "Vivado 2023.2 build 4029153; Bootgen 2023.2",
+  "bitstream": "red_pitaya_z20_gen2_repaired.bit.bin",
+  "bitstream_bytes": 4045568,
+  "bitstream_sha256": "24e3d58678ec15a98e44455c945577915b38c11038c4d1638ee50808ed12d549",
+  "supported_test_profile": {
+    "id": 22,
+    "fpga": "z20_125_v2",
+    "zynq": "Z7020"
+  },
+  "dtbo": {
+    "fpga.bit.bin": {
+      "file": "red_pitaya_os2_z10.dtbo",
+      "sha256": "41a1c828bc5a7bbe99542353dfd2fbe181927e79b0e7515b86e1abbc006577f9"
+    },
+    "fpga.bin": {
+      "file": "red_pitaya_os2_z10_fpga_bin.dtbo",
+      "sha256": "99f0fd0c3ce394fb0c86e4dec95895b8a5855cc80ebbfd5fedc961fb9ed4a35c"
+    }
+  },
+  "overlay_contract": "Unchanged 125/250/50/200 MHz fabric clocks, 64-bit HP0/HP1 and direct RTL XADC; exact existing fork overlays reused.",
+  "bitstream_generation_drc_errors": 0,
+  "bitstream_drc_warnings": 133,
+  "severity_overrides": false,
+  "routing_errors": 0,
+  "routable_nets": 21764,
+  "fully_routed_nets": 21764,
+  "timing_closed": false,
+  "setup_wns_ns": -4.369,
+  "setup_tns_ns": -5205.906,
+  "setup_failing_endpoints": 6802,
+  "hold_whs_ns": -2.362,
+  "hold_ths_ns": -64.289,
+  "hold_failing_endpoints": 28,
+  "methodology_critical_warnings": [
+    "TIMING-17: unconstrained DNA clock"
+  ],
+  "unconstrained_internal_endpoints": 2,
+  "inputs_without_delay": 16,
+  "outputs_without_delay": 46,
+  "rtl_simulation": "PASS: real XSim 2023.2, 342 PID checks and 5 x 4096 filter checks",
+  "hardware_test": "not performed",
+  "repair_scope": "Declaration visibility; disabled-D connection; explicit filter shift padding and pause net; equivalent literal-zero cleanup. No clock, constraint, pipeline-stage or other RTL changes relative to accepted platform plus shared repair.",
+  "resources": {
+    "lut": 13814,
+    "flip_flops": 10434,
+    "bram_tiles": 34,
+    "dsp48": 36,
+    "direct_xadc": 1,
+    "ps7": 1
+  }
+}

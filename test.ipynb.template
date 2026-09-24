@@ -7,7 +7,7 @@
    "source": [
     "# Gen 2 Pro Z7020 / OS 2: repeat the Gen 1 signal tests\n",
     "\n",
-    "Repeat the Gen 1 DC calibration, 1 Hz / 1 kHz triangle loopback and negative-I PID experiment on the original-logic Z7020 image. Common PID/filter fixes are intentionally absent. The earlier Pro loading/connection test passed; timing remains unclosed. Use fresh measurements for this board, not the Gen 1 calibration. Run one step at a time."
+    "Repeat the DC calibration, 1 Hz / 1 kHz triangle loopback and negative-I PID experiment on the repaired Z7020 image. Common PID/filter fixes are included; this new image has not been hardware-tested. Clocks and pipeline latency are unchanged; timing closure is not claimed. Run one step at a time and use fresh board measurements."
    ]
   },
   {
@@ -32,17 +32,17 @@
     "import sys\n",
     "\n",
     "import pyrpl\n",
-    "from pyrpl.redpitaya import RedPitaya, Z20_AUTHOR_BITSTREAM_FILENAME\n",
+    "from pyrpl.redpitaya import RedPitaya, Z20_REPAIRED_BITSTREAM_FILENAME\n",
     "\n",
     "HOSTNAME = \"rp-xxxxxx.local\"\n",
     "SSH_USER = \"root\"\n",
-    "bitstream = Path(pyrpl.__file__).resolve().parent / Z20_AUTHOR_BITSTREAM_FILENAME\n",
+    "bitstream = Path(pyrpl.__file__).resolve().parent / Z20_REPAIRED_BITSTREAM_FILENAME\n",
     "\n",
     "print(\"Python:\", sys.executable)\n",
     "print(\"PyRPL:\", pyrpl.__file__)\n",
     "print(\"Bitstream:\", bitstream)\n",
     "assert bitstream.is_file()\n",
-    "build_record = json.loads((bitstream.parent / \"red_pitaya_z20_gen2_author.json\").read_text())\n",
+    "build_record = json.loads((bitstream.parent / \"red_pitaya_z20_gen2_repaired.json\").read_text())\n",
     "print(\"RTL baseline:\", build_record[\"rtl_commit\"], \"common fixes:\", build_record[\"common_pid_filter_fixes_included\"])\n",
     "print(\"Timing closed:\", build_record[\"timing_closed\"], \"setup WNS [ns]:\", build_record[\"setup_wns_ns\"])\n",
     "print(\"RTL simulation:\", build_record[\"rtl_simulation\"])"
@@ -95,7 +95,7 @@
    "source": [
     "## 3. Program the FPGA\n",
     "\n",
-    "Uploads the separate Z7020 author-baseline image and fork-matched OS 2 overlay, then programs the FPGA. This changes the active FPGA and temporarily stops web services; it does not start the PyRPL server. Use a bench setup with experimental actuators disconnected."
+    "Uploads the separately built repaired Z7020 image and unchanged fork-matched OS 2 overlay, then programs the FPGA. This changes the active FPGA and temporarily stops web services; it does not start the PyRPL server."
    ]
   },
   {
@@ -146,7 +146,7 @@
     "from pyrpl import Pyrpl\n",
     "\n",
     "p = Pyrpl(\n",
-    "    config=\"gen2-pro-os2-author-baseline\",\n",
+    "    config=\"gen2pro-os2-repaired\",\n",
     "    hostname=HOSTNAME,\n",
     "    user=SSH_USER,\n",
     "    password=SSH_PASSWORD,\n",
@@ -619,7 +619,7 @@
    "outputs": [],
    "source": [
     "p._clear()\n",
-    "p = Pyrpl(config=\"gen2-pro-os2-author-baseline\", hostname=HOSTNAME,\n",
+    "p = Pyrpl(config=\"gen2pro-os2-repaired\", hostname=HOSTNAME,\n",
     "          user=SSH_USER, password=SSH_PASSWORD,\n",
     "          filename=str(bitstream), gui=False,\n",
     "          reloadfpga=False, reloadserver=False)\n",

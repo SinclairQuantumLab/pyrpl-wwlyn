@@ -271,8 +271,13 @@
   `f6728daaf863f6c48a1d8b27a7262d7fb7653c489f37db36acd6cbb9cc4a7307`.
   Run `tests.test_z7020_author_baseline` and `tests.test_z7020_author_loader`.
   These check original-source identity and offline loader behavior, not a
-  passing RTL simulation or timing closure. XSim rejects the untouched
-  author's `int_shr` declaration order; record that failure, do not repair it.
+  passing RTL simulation or timing closure. The original author's declaration
+  order failed XSim; the current repaired-source simulation is tested separately.
+- This develop additionally packages `red_pitaya_z20_gen2_repaired.bit.bin`
+  with separate provenance and the same exact profile-22 loader guard. Run
+  `tests.test_z7020_repaired_baseline` and `tests.test_z7020_repaired_loader`.
+  `repaired_rtl.json` pins the full source tree to the common repair checkpoint;
+  `author_rtl.json` remains historical provenance for the unchanged author BIN.
 - Standard Gen 2 readiness also runs `tests/test_fork_pid_compatibility.py`
   and `tests/test_gen2_manual_workflow.py` with unittest. These characterize
   Python register writes and validate the clean template without executing
@@ -336,11 +341,11 @@
   `z10_125_pro_v2`. Preserve the exact fork bitstream. Refuse mismatched
   profile/path pairs, early OS 2, OS 3, and other converter families
   before uploading or changing device state.
-- The only additional Z7020 loading path is the explicit hash-pinned
-  author-baseline image for profile 22 / `z20_125_v2` / Z7020. It reuses the
+- The only additional Z7020 loading paths are the explicit hash-pinned
+  author-baseline and repaired images for profile 22 / `z20_125_v2` / Z7020. They reuse the
   existing fork DTBO bytes because fabric clocks, HP widths and direct XADC
   are unchanged. The default original BIN must still be rejected on Z7020;
-  other Z7020 profiles are not enabled by this first-device experiment.
+  other Z7020 profiles are not enabled by these experiments.
 - OS 2.07+ loading must inspect the installed `overlay.sh` and recognize only
   its known fixed custom basenames, `/opt/pyrpl/fpga.bit.bin` or
   `/opt/pyrpl/fpga.bin`. It must select the hash-pinned DTBO whose
@@ -366,7 +371,7 @@
   DTBO remain unchanged. Gen 2 DAC full scale is +/-2 V into high impedance
   and +/-1 V into 50 ohms; do not silently alter PyRPL's register normalization
   because software cannot infer the load. The authorized Z7020 Gen 2 port is
-  under development; only the separately pinned original-logic experiment is
-  prepared for a user-run load, not commissioned. TI-based Gen 2 boards require a
+  under development; the original-logic main is accepted, while repaired-image
+  hardware testing remains pending. TI-based Gen 2 boards require a
   different converter/platform design and remain outside the preservation-
   first path.
