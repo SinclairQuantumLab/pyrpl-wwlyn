@@ -89,6 +89,7 @@ source-include = [
     "tests/**",
 ]
 wheel-exclude = [
+    "pyrpl/fpga/sim/**",
     "pyrpl/fpga/ip/**",
     "pyrpl/fpga/out/**",
     "pyrpl/fpga/rtl/**",

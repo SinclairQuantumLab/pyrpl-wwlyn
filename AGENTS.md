@@ -1,5 +1,28 @@
 # PyRPL fork agent guidance
 
+## Shared PID source integration (2026-09-24)
+
+- This develop branch directly integrates `fix/pid-rtl-shadowing` at
+  `e747916`, including declaration visibility, the disabled-D connection,
+  explicit filter shift padding/pause nets, and the equivalent literal-zero
+  cleanup. This explicitly authorizes these common source repairs on this
+  development line; it does not authorize further RTL redesign.
+- The target's FPGA images, DTBOs, loader, clocks and notebook are retained.
+  Existing packaged images do not acquire these source repairs merely by
+  merging. No replacement image, hardware validation or main promotion is
+  claimed. Keep original-logic feature candidates separate.
+- Timing remains an open finding, not a proven deployed-hardware flaw or a
+  predetermined repair task. Changes are deferred pending understanding of
+  the relevant build, constraints and device behavior. Shorter actual delays
+  or a low-latency trade-off with empirical validation are possible explanations,
+  not measured conclusions or established author intent. No clock/latency
+  changes or timing repair without a new request.
+- Prior simulation evidence is in `.agents/common-pid-rtl-fix-changelog.md`
+  and `.agents/root-pid-repair-rollout.md`; the latter describes the historical
+  topic rollout, not the current branch layout. The historical timing study
+  is `.agents/common-z7010-timing-investigation.md`. This integration uses
+  source/tree preservation checks, not a fresh simulation or field test.
+
 ## Scope
 
 - Commit `407a9d1b8c70f74e6d59a67365d1eaa1d34a0553` is the field-tested
@@ -49,18 +72,49 @@
 
 ## Branching
 
-- `develop` is the integration branch for changes that apply across device/OS
-  combinations. Common work uses standard topic namespaces such as
-  `feature/*`, `fix/*`, and `refactor/*` and is merged into `develop`.
+- Authorized local layout: the primary checkout serves
+  `gen2-pro-os2/feature/device-upgrade`; `.worktrees/gen1-os2` serves
+  `gen1-os2/main`, with its own environment and local notebook. The external
+  `working-vs1` worktree belongs to another worker and must remain untouched.
+- Recommend persistent device/OS worktrees under one contained directory,
+  such as `.worktrees/<genX-osY>/`, rather than scattered project folders.
+  Each worktree should have its own `.venv` and ignored local notebook.
+  Document this convention here; do not add bootstrap scripts or create/move
+  worktrees without an explicit request. Preserve existing worktrees and
+  their local files. Git clones reproduce committed guidance and published
+  branches, not local worktree layouts, environments or ignored notebooks.
+- This contained device/OS worktree layout is intentional, not permission
+  for agents to create arbitrary additional worktrees. Existing worktrees
+  do not imply authorization to add more. Creating, moving, removing or
+  reorganizing worktrees requires the user's explicit approval; use the
+  appropriate existing worktree for ordinary development.
+- Scale validation to the task. Commit-only requests require diff/staging
+  review, not test reruns. Minor changes need only directly relevant checks.
+  The full validation checklist below is for substantive implementation or
+  release work, or an explicit request, not every handoff or branch operation.
+
+- Common work uses focused topic branches such as `feature/*`, `fix/*`, and
+  `refactor/*`. Global `develop` is optional shared integration when several
+  changes need testing together, not a mandatory propagation step.
 - Device- or OS-specific work belongs under its target compatibility root,
   for example `gen1-os2/feature/os-upgrade` or
   `gen2-os2/fix/device-profile`.
 - A compatibility root's `main` branch means that combination is considered
   commissionable. Do not create or advance it based only on offline evidence
   when its field gate is still open.
-- Propagate common changes from `develop` into compatibility branches with
-  merge commits. Use `git cherry-pick -x` only for an intentionally selective
-  backport that must not import the source branch's other changes.
+- When authorized and ready, merge each specific common topic directly into
+  the intended `<root>/develop` branches. Use explicit merge commits
+  (`--no-ff`) naming the update and target so each root's adoption is visible
+  and the shared commits retain their identity. Inspect the incoming ancestry
+  first; a topic name does not guarantee it contains no unrelated changes.
+- Create `<root>/fix/*` or other root-specific topics only when adaptation,
+  substantial conflict resolution or separate development/validation is
+  needed, not as automatic intermediate copies of every common update.
+  Propagation into develop does not authorize promotion into `<root>/main`.
+- Use `git cherry-pick -x` for an intentionally selective backport that must
+  not import the source branch's other changes, such as common documentation
+  authored on a device-specific topic. Do not merge a device-upgrade branch
+  wholesale into other roots just to share its documentation.
 - Do not rebase published compatibility `main` branches or rewrite validation
   history.
 
@@ -110,6 +164,12 @@
   operation must not depend on `--locked`, `--frozen`, or similar flags.
 - Before handoff, compile all Python files, install from a fresh Python 3.14
   environment, inspect the wheel, and verify the fork bitstream hash.
+
+- Shared PID RTL implementation changes require the real XSim contract in
+  `pyrpl/fpga/sim/run_pid_contract.py`; see its README. Prior passing evidence
+  is not hardware validation or timing closure. For an unchanged-source merge,
+  verify source identity and target preservation; do not repeat full suites
+  merely to integrate an already validated update.
 
 ## Configuration and notebooks
 
