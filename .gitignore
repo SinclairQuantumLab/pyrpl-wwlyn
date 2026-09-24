@@ -135,3 +135,6 @@ unit_tests.xml
 unit_test_results.xml
 
 /.worktrees/
+
+# Keep the branch-specific working notebook in version control.
+!/test.ipynb
