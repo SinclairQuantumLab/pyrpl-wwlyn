@@ -138,5 +138,6 @@ unit_test_results.xml
 unit_test_coverage.xml
 
 # Local manual-test settings/results; the clean starter is tracked instead.
-/test.ipynb
 
+# Keep the branch-specific working notebook in version control.
+!/test.ipynb
