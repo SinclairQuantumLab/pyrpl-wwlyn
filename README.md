@@ -17,9 +17,9 @@ PyRPL (Python RedPitaya Lockbox) turns your RedPitaya into a powerful DSP device
 
 ## Accepted device baseline (2026-09-24)
 
-`gen2-pro-os2/main` records the user's successful real-device testing and acceptance
+`gen2pro-os2/main` records the user's successful real-device testing and acceptance
 of the original-logic baseline. The shared PID/filter repairs remain on
-`gen2-pro-os2/develop`, not this main. See the
+`gen2pro-os2/develop`, not this main. See the
 [acceptance record](.agents/pre-repair-main-acceptance-20260924.md) for source
 snapshots, previous observations and evidence limits. This is user-reported
 acceptance, not a new agent-run test or proof of timing closure. Older
