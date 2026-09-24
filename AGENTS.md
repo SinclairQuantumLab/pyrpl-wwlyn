@@ -1,5 +1,19 @@
 # PyRPL fork agent guidance
 
+## Notebook version control (2026-09-24)
+
+- The user explicitly requested version control for `test.ipynb` across all
+  fork branches. Keep it unignored and commit the branch's own notebook;
+  where none is tracked, use that branch's template if one exists. Do not
+  copy another device/OS branch's notebook into it.
+- Preserve notebook settings, measurements and saved outputs. Do not reset,
+  sanitize, replace or execute a notebook without a specific user request.
+  Tracking a notebook does not authorize contacting or programming hardware.
+- Keep any `test.ipynb.template` as a clean starter. Never overwrite an
+  existing working notebook when updating a template or switching branches.
+- This request supersedes older ignored/local-only and never-stage notebook
+  guidance below. Other workers' working directories remain untouched.
+
 ## Common-policy comparison
 
 - At the start of each new agent/thread working on this repository, and
