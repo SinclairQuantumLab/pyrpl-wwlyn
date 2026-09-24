@@ -15,6 +15,21 @@
 
 PyRPL (Python RedPitaya Lockbox) turns your RedPitaya into a powerful DSP device, especially suitable as a digital lockbox and measurement device in quantum optics experiments.
 
+## Accepted device baseline (2026-09-24)
+
+`gen2-pro-os2/main` records the user's successful real-device testing and acceptance
+of the original-logic baseline. The shared PID/filter repairs remain on
+`gen2-pro-os2/develop`, not this main. See the
+[acceptance record](.agents/pre-repair-main-acceptance-20260924.md) for source
+snapshots, previous observations and evidence limits. This is user-reported
+acceptance, not a new agent-run test or proof of timing closure. Older
+pending-field-test statements below describe earlier development stages.
+
+This Pro baseline uses the separately named
+`red_pitaya_z20_gen2_author.bit.bin` for exact profile 22 /
+`z20_125_v2` / Z7020. The default Z7010 image is not its replacement.
+The loader restrictions and original build-provenance record are unchanged.
+
 ## Website
 The official PyRPL website address is [http://pyrpl.readthedocs.io/](http://pyrpl.readthedocs.io). The information on the website is more up-to-date than in this readme.
 
@@ -78,9 +93,9 @@ python -m pip install --editable .
 
 ### Red Pitaya compatibility
 
-This Pro development branch is preparing a separate Z7020 / OS 2 port.
-No Z7020 image is packaged yet; the loader still refuses Z7020. The compatibility
-list and notebook below describe the retained Z7010 reference implementation.
+This Pro main includes the accepted original-logic Z7020 / OS 2 image
+for profile 22, as described above. The list below describes the retained
+Z7010 support; other Z7020 profiles remain refused.
 
 This branch preserves the author's exact FPGA image for an
 STEMlab 125-14 with Zynq-7010. The loader supports:
@@ -96,7 +111,7 @@ STEMlab 125-14 with Zynq-7010. The loader supports:
 The loader reads the installed `overlay.sh` and supports both known OS 2 custom
 firmware basenames, `fpga.bit.bin` and `fpga.bin`, with a matching hash-pinned
 DTBO for each. Profile IDs and paths must match exactly. An unknown loader
-contract, early OS 2, OS 3, Z7020, or another converter family is refused
+contract, early OS 2, OS 3, unapproved Z7020 profiles, or another converter family is refused
 before FPGA files are uploaded. OS 2.07+ support has passed hardware-free
 regression tests. FPGA loading and PyRPL connection were field-tested on one
 original Z7010 board running OS 2.07-3; Gen 2 field validation remains pending.

@@ -1,6 +1,21 @@
 # PyRPL fork agent guidance
 
-## Current first-device-test scope (2026-09-15)
+## Current main acceptance (2026-09-24)
+
+- `gen2-pro-os2/main` is the user-accepted, device-tested original-logic baseline
+  selected from `7cb67e2`. See
+  `.agents/pre-repair-main-acceptance-20260924.md` for the user's confirmation,
+  exact source selection, previous evidence and limits. No new agent-run
+  test or broader timing/profile guarantee is claimed.
+- This status supersedes earlier pending-test/no-main instructions below.
+  Historical first-test scopes and build logs retain their original evidence.
+  Do not import the shared PID/filter repairs into this main without new
+  authorization: those remain on the separate develop line. Preserve the
+  original RTL, images, loader and notebook. Timing remains an open finding,
+  not an established deployed defect or an authorized repair task.
+
+
+## Historical first-device-test scope (2026-09-15)
 
 - The user's saved first-device run now confirms preflight, FPGA programming,
   PyRPL connection and PID metadata reads on profile 22 / Z7020 Pro / OS 2.
