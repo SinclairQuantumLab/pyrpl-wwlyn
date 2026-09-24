@@ -147,9 +147,9 @@ SSH result. Its JSON report identifies the exact board variant and marks Gen 2
 field validation as pending. Run it only when live read-only access to the
 named board is intended.
 
-For a step-by-step Z7010 Gen 2 field test, copy `test.ipynb.template` to
-`test.ipynb` and edit its hostname. The template is versioned; `test.ipynb` is an
-ignored local working copy where you can keep your settings and results.
+For a step-by-step Z7010 Gen 2 field test, use the versioned `test.ipynb`
+and edit its hostname. If it is absent, create it from `test.ipynb.template`.
+Keep your settings and results in the working notebook.
 Do not overwrite an existing notebook to update it. Standard Z7010 Gen 2
 offline readiness is recorded at `3fc4307`; physical tests are deferred.
 The template separates preflight, FPGA programming, and server connection,
