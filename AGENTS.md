@@ -2,6 +2,10 @@
 
 ## Shared PID source integration (2026-09-24)
 
+- The user subsequently confirmed successful device testing of all four
+  pre-repair baselines and authorized their corresponding mains. See
+  `.agents/pre-repair-main-acceptance-20260924.md`. That acceptance does not
+  cover the repaired develop sources; original-logic mains remain separate.
 - This develop branch directly integrates `fix/pid-rtl-shadowing` at
   `e747916`, including declaration visibility, the disabled-D connection,
   explicit filter shift padding/pause nets, and the equivalent literal-zero
