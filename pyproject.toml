@@ -86,9 +86,11 @@ source-include = [
     "pyrpl.spec",
     "pyrpl.yml",
     "setup.cfg",
+    "test.ipynb.template",
     "tests/**",
 ]
 wheel-exclude = [
+    "pyrpl/fpga/targets/**",
     "pyrpl/fpga/sim/**",
     "pyrpl/fpga/ip/**",
     "pyrpl/fpga/out/**",
