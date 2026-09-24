@@ -65,7 +65,7 @@
 ## Branching
 
 - Authorized local layout: the primary checkout serves
-  `gen2-pro-os2/feature/device-upgrade`; `.worktrees/gen1-os2` serves
+  `gen2pro-os2/feature/device-upgrade`; `.worktrees/gen1-os2` serves
   `gen1-os2/main`, with its own environment and local notebook. The external
   `working-vs1` worktree belongs to another worker and must remain untouched.
 - Recommend persistent device/OS worktrees under one contained directory,
