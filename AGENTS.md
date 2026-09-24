@@ -1,5 +1,19 @@
 # PyRPL fork agent guidance
 
+## Notebook version control (2026-09-24)
+
+- The user explicitly requested version control for `test.ipynb` across all
+  fork branches. Keep it unignored and commit the branch's own notebook;
+  where none is tracked, use that branch's template if one exists. Do not
+  copy another device/OS branch's notebook into it.
+- Preserve notebook settings, measurements and saved outputs. Do not reset,
+  sanitize, replace or execute a notebook without a specific user request.
+  Tracking a notebook does not authorize contacting or programming hardware.
+- Keep any `test.ipynb.template` as a clean starter. Never overwrite an
+  existing working notebook when updating a template or switching branches.
+- This request supersedes older ignored/local-only and never-stage notebook
+  guidance below. Other workers' working directories remain untouched.
+
 ## Current main acceptance (2026-09-24)
 
 - `gen2pro-os2/main` is the user-accepted, device-tested original-logic baseline
@@ -113,7 +127,7 @@
   `working-vs1` worktree belongs to another worker and must remain untouched.
 - Recommend persistent device/OS worktrees under one contained directory,
   such as `.worktrees/<genX-osY>/`, rather than scattered project folders.
-  Each worktree should have its own `.venv` and ignored local notebook.
+  Each worktree should have its own `.venv` and notebook working copy.
   Document this convention here; do not add bootstrap scripts or create/move
   worktrees without an explicit request. Preserve existing worktrees and
   their local files. Git clones reproduce committed guidance and published
@@ -258,10 +272,10 @@
 - `test.ipynb.template` is the tracked user-facing manual/live-device starter.
   Put user-run steps there with brief Markdown explanations. Keep it free of
   saved outputs, device-specific addresses, and passwords.
-- `test.ipynb` is the ignored local working copy, created from the template.
-  Preserve its settings and saved outputs. Never stage it or overwrite it
-  during template updates. Do not run it or change its contents unless the
-  user explicitly requests notebook/device work.
+- `test.ipynb` is the versioned working notebook for this branch.
+  Preserve its settings and saved outputs; do not overwrite it during
+  template updates. Do not run it or change its contents unless the user
+  explicitly requests notebook/device work.
 - The current manual workflow repeats the user's Gen 1 DC calibration,
   1 Hz / 1 kHz triangle and negative-I PID experiment on Pro. Do not reuse Gen 1
   calibration coefficients: derive separate OUT1 and IN1 fits from fresh
