@@ -130,6 +130,19 @@
 
 ## FPGA and device safety
 
+- Treat full-design timing as an open finding, not an established defect of
+  the deployed system or a predetermined repair task. Whether a design change
+  is necessary remains unestablished; changes are deferred pending better
+  understanding. See README.md, "FPGA timing: open finding; hardware relevance
+  not yet established". PID/filter connection fixes do not prove timing closure.
+  Distinguish the historical report, source simulation, synthesized circuit
+  and device observations; do not assume the report matches the distributed BIN.
+  Shorter actual delays are a possible explanation, not a measured finding or
+  grounds to dismiss the report. A low-latency performance trade-off relying
+  on empirical validation is also a possible explanation, but must remain
+  explicitly labeled as a hypothesis, not established author intent or proof
+  of harmlessness. Investigate relevance before proposing a correction; do not
+  change clocks, feedback latency or RTL for timing without a new request.
 - The fork author's known hardware environment was Red Pitaya OS `1.04-18`
   on an original-generation STEMlab 125-14 with a Zynq-7010. Treat that as
   provenance for the legacy `/dev/xdevcfg` loader, not as permission to

@@ -144,6 +144,49 @@ python -m pyrpl your_configuration_name
 A GUI should open, let you configure the redpitaya device you would like to use, and you can start playing around with pyrpl. Different strings for 'your_configuration_name' create different configurations that will be automatically remembered by PyRPL, for example if you have several different redpitayas. Different RedPitayas with different configuration names can be run simultaneously in separate terminals.
 
 ## Issues
+
+### FPGA timing: open finding; hardware relevance not yet established
+
+The FPGA timing finding is separate from the PID/filter signal-connection
+repairs on `fix/pid-rtl-shadowing`. Those repairs do not establish full-design
+timing closure. It is not yet established whether the reported violations
+represent a defect in the deployed system or require a design change. Leave
+the implementation unchanged until the finding is understood well enough to
+decide whether any correction is warranted; do not presume a repair is needed.
+
+The author's original checkpoint `387faf3` already contains a Vivado 2015.4
+[post-route timing report](pyrpl/fpga/out/post_route_timing_summary.rpt), dated
+2025-08-21, that states "Timing constraints are not met." Its worst setup
+slack is -4.094 ns on an IQ filter/modulator path at 125 MHz, not necessarily
+the PID loop being used. This is static timing-analysis evidence for that
+build, not an observed malfunction of a deployed board. The report has not
+been proven to describe the preserved distributed BIN: later commit
+`61295d9` updates the BIN without updating the reports.
+
+A particular device can have shorter actual propagation delays than the
+manufacturer's slow-corner timing model, depending on manufacturing variation,
+voltage and temperature ([AMD timing-corner documentation](https://docs.amd.com/r/en-US/ug835-vivado-tcl-commands/config_timing_corners)).
+Thus successful operation on real hardware can coexist with a failing timing
+report. Different exercised signal paths/settings, inaccurate constraints or
+a different deployed build are other possible explanations; none has been
+established as the explanation here. Successful bench tests do not demonstrate
+timing closure across all supported conditions, and the reported shortfall
+must not simply be dismissed as manufacturer conservatism.
+
+One possible explanation is a performance-oriented design trade-off,
+prioritizing low feedback latency and relying on empirical validation under
+the intended operating conditions. This is a hypothesis, not established
+author intent or evidence that the timing findings are harmless. Such a
+trade-off does not necessarily mean overclocking: it can involve more
+computation between registers at an unchanged clock frequency.
+
+The next question is what the finding means for the relevant implementation,
+constraints and operating conditions, not how to change the PID to clear a
+report. No assumption about the author's intent is needed. Neither dismiss
+the report nor label the deployed design flawed solely because of it. Do not
+lower clocks, add pipeline latency or redesign the PID without evidence that
+a change is warranted and a separately agreed scope.
+
 We collect a list of common problems on the [documenation website](http://pyrpl.readthedocs.io/en/latest/user_guide/installation/common_problems.html). If you do not find your problem listed there, please report all problems or wishes as new issues on [this page](https://github.com/lneuhaus/pyrpl/issues), so we can fix it and improve the future user experience.
 
 ## Unit test
