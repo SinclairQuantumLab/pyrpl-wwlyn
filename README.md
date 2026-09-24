@@ -15,6 +15,16 @@
 
 PyRPL (Python RedPitaya Lockbox) turns your RedPitaya into a powerful DSP device, especially suitable as a digital lockbox and measurement device in quantum optics experiments.
 
+## Accepted device baseline (2026-09-24)
+
+`gen1-os2/main` records the user's successful real-device testing and acceptance
+of the original-logic baseline. The shared PID/filter repairs remain on
+`gen1-os2/develop`, not this main. See the
+[acceptance record](.agents/pre-repair-main-acceptance-20260924.md) for source
+snapshots, previous observations and evidence limits. This is user-reported
+acceptance, not a new agent-run test or proof of timing closure. Older
+pending-field-test statements below describe earlier development stages.
+
 ## Website
 The official PyRPL website address is [http://pyrpl.readthedocs.io/](http://pyrpl.readthedocs.io). The information on the website is more up-to-date than in this readme.
 
