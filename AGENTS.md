@@ -2,8 +2,9 @@
 
 ## Shared PID source integration (2026-09-24)
 
-- The user subsequently confirmed successful device testing of all four
-  pre-repair baselines and authorized their corresponding mains. See
+- The user confirmed successful device testing of the Gen1 OS1, Gen1 OS2
+  and Gen2 Pro OS2 pre-repair baselines and authorized their mains. Standard
+  Gen2 Z7010 has NOT been tested: no device is available, so it has no main. See
   `.agents/pre-repair-main-acceptance-20260924.md`. That acceptance does not
   cover the repaired develop sources; original-logic mains remain separate.
 - This develop branch directly integrates `fix/pid-rtl-shadowing` at
@@ -39,13 +40,13 @@
   `gen1-os2/feature/os-upgrade` adds Red Pitaya OS 2.07+ loader/device-tree
   integration for the author's original Z7010 board. The
   `gen2-os2/feature/device-upgrade` and
-  `gen2-pro-os2/feature/device-upgrade` candidates add repo-side support for
+  `gen2pro-os2/feature/device-upgrade` candidates add repo-side support for
   the exact Z7010 Gen 2 profile families.
 - Do not import implementation changes or FPGA assets from current official
   PyRPL merely because they are newer.
 - Standard Z7010 Gen 2 offline readiness is committed at `3fc4307`; the user
   deferred its physical tests. Active development now targets Z7020 Gen 2 Pro
-  on OS 2 under `gen2-pro-os2/feature/device-upgrade`.
+  on OS 2 under `gen2pro-os2/feature/device-upgrade`.
 - The user authorized proceeding beyond the Z7020 feasibility assessment.
   Keep its port/build/simulation evidence in a separate implementation log.
   Preserve the original BIN and approved Z7010 DTBOs; any new Z7020 image must
@@ -92,7 +93,7 @@
 ## Branching
 
 - Authorized local layout: the primary checkout serves
-  `gen2-pro-os2/feature/device-upgrade`; `.worktrees/gen1-os2` serves
+  `gen2pro-os2/feature/device-upgrade`; `.worktrees/gen1-os2` serves
   `gen1-os2/main`, with its own environment and local notebook. The external
   `working-vs1` worktree belongs to another worker and must remain untouched.
 - Recommend persistent device/OS worktrees under one contained directory,
