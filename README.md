@@ -15,6 +15,21 @@
 
 PyRPL (Python RedPitaya Lockbox) turns your RedPitaya into a powerful DSP device, especially suitable as a digital lockbox and measurement device in quantum optics experiments.
 
+## Accepted device baseline (2026-09-24)
+
+`gen2pro-os2/main` records the user's successful real-device testing and acceptance
+of the original-logic baseline. The shared PID/filter repairs remain on
+`gen2pro-os2/develop`, not this main. See the
+[acceptance record](.agents/pre-repair-main-acceptance-20260924.md) for source
+snapshots, previous observations and evidence limits. This is user-reported
+acceptance, not a new agent-run test or proof of timing closure. Older
+pending-field-test statements below describe earlier development stages.
+
+This Pro baseline uses the separately named
+`red_pitaya_z20_gen2_author.bit.bin` for exact profile 22 /
+`z20_125_v2` / Z7020. The default Z7010 image is not its replacement.
+The loader restrictions and original build-provenance record are unchanged.
+
 ## Website
 The official PyRPL website address is [http://pyrpl.readthedocs.io/](http://pyrpl.readthedocs.io). The information on the website is more up-to-date than in this readme.
 
@@ -78,9 +93,9 @@ python -m pip install --editable .
 
 ### Red Pitaya compatibility
 
-This Pro development branch is preparing a separate Z7020 / OS 2 port.
-No Z7020 image is packaged yet; the loader still refuses Z7020. The compatibility
-list and notebook below describe the retained Z7010 reference implementation.
+This Pro main includes the accepted original-logic Z7020 / OS 2 image
+for profile 22, as described above. The list below describes the retained
+Z7010 support; other Z7020 profiles remain refused.
 
 This branch preserves the author's exact FPGA image for an
 STEMlab 125-14 with Zynq-7010. The loader supports:
@@ -96,7 +111,7 @@ STEMlab 125-14 with Zynq-7010. The loader supports:
 The loader reads the installed `overlay.sh` and supports both known OS 2 custom
 firmware basenames, `fpga.bit.bin` and `fpga.bin`, with a matching hash-pinned
 DTBO for each. Profile IDs and paths must match exactly. An unknown loader
-contract, early OS 2, OS 3, Z7020, or another converter family is refused
+contract, early OS 2, OS 3, unapproved Z7020 profiles, or another converter family is refused
 before FPGA files are uploaded. OS 2.07+ support has passed hardware-free
 regression tests. FPGA loading and PyRPL connection were field-tested on one
 original Z7010 board running OS 2.07-3; Gen 2 field validation remains pending.
@@ -144,6 +159,49 @@ python -m pyrpl your_configuration_name
 A GUI should open, let you configure the redpitaya device you would like to use, and you can start playing around with pyrpl. Different strings for 'your_configuration_name' create different configurations that will be automatically remembered by PyRPL, for example if you have several different redpitayas. Different RedPitayas with different configuration names can be run simultaneously in separate terminals.
 
 ## Issues
+
+### FPGA timing: open finding; hardware relevance not yet established
+
+The FPGA timing finding is separate from the PID/filter signal-connection
+repairs on `fix/pid-rtl-shadowing`. Those repairs do not establish full-design
+timing closure. It is not yet established whether the reported violations
+represent a defect in the deployed system or require a design change. Leave
+the implementation unchanged until the finding is understood well enough to
+decide whether any correction is warranted; do not presume a repair is needed.
+
+The author's original checkpoint `387faf3` already contains a Vivado 2015.4
+[post-route timing report](pyrpl/fpga/out/post_route_timing_summary.rpt), dated
+2025-08-21, that states "Timing constraints are not met." Its worst setup
+slack is -4.094 ns on an IQ filter/modulator path at 125 MHz, not necessarily
+the PID loop being used. This is static timing-analysis evidence for that
+build, not an observed malfunction of a deployed board. The report has not
+been proven to describe the preserved distributed BIN: later commit
+`61295d9` updates the BIN without updating the reports.
+
+A particular device can have shorter actual propagation delays than the
+manufacturer's slow-corner timing model, depending on manufacturing variation,
+voltage and temperature ([AMD timing-corner documentation](https://docs.amd.com/r/en-US/ug835-vivado-tcl-commands/config_timing_corners)).
+Thus successful operation on real hardware can coexist with a failing timing
+report. Different exercised signal paths/settings, inaccurate constraints or
+a different deployed build are other possible explanations; none has been
+established as the explanation here. Successful bench tests do not demonstrate
+timing closure across all supported conditions, and the reported shortfall
+must not simply be dismissed as manufacturer conservatism.
+
+One possible explanation is a performance-oriented design trade-off,
+prioritizing low feedback latency and relying on empirical validation under
+the intended operating conditions. This is a hypothesis, not established
+author intent or evidence that the timing findings are harmless. Such a
+trade-off does not necessarily mean overclocking: it can involve more
+computation between registers at an unchanged clock frequency.
+
+The next question is what the finding means for the relevant implementation,
+constraints and operating conditions, not how to change the PID to clear a
+report. No assumption about the author's intent is needed. Neither dismiss
+the report nor label the deployed design flawed solely because of it. Do not
+lower clocks, add pipeline latency or redesign the PID without evidence that
+a change is warranted and a separately agreed scope.
+
 We collect a list of common problems on the [documenation website](http://pyrpl.readthedocs.io/en/latest/user_guide/installation/common_problems.html). If you do not find your problem listed there, please report all problems or wishes as new issues on [this page](https://github.com/lneuhaus/pyrpl/issues), so we can fix it and improve the future user experience.
 
 ## Unit test

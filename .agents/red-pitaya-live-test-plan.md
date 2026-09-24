@@ -1,7 +1,9 @@
 # Red Pitaya live-test plan
 
-Updated 2026-09-12 for the standard Z7010 Gen 2 candidate. This is a plan,
-not permission for an agent to contact or program a board.
+Candidate summary updated 2026-09-15. The detailed standard Z7010 Gen 2
+checklist below remains separate from the focused Pro signal repeat in
+`z7020-signal-repeat-preparation.md`. This is not permission for an agent to
+contact or program a board.
 
 ## Current candidates and historical checkpoints
 
@@ -9,9 +11,9 @@ not permission for an agent to contact or program a board.
 | --- | --- | --- |
 | Author-board Python 3.9 baseline | `407a9d1`, original Z7010, OS 1.04-18 | Field-tested comparison point; no OS downgrade is required for this work |
 | Python 3.14 implementation | `c535358` | Historical Python upgrade checkpoint, not the current OS 2 test checkout |
-| Original-board OS 2 | `gen1-os2/main`, promoted and subsequently updated through `efa5a00` | OS 2.07-3 FPGA loading and PyRPL connection passed; analog/control measurements remain separate |
+| Original-board OS 2 | `gen1-os2/main`, signal results recorded at `8c6f4df` | Loading/connection, DC notes, triangle trace and PID setup recorded; user reports both 1 Hz and 1 kHz passing; see `gen1-os2-signal-field-result-20260915.md` for scope |
 | Standard Gen 2, OS 2 | `gen2-os2/feature/device-upgrade`, checkpoint `3fc4307` | Offline readiness committed; user deferred loader, functional, and analog field measurements |
-| Pro / Z7020 | `gen2-pro-os2/feature/device-upgrade` | RTL/platform development started; no Z7020 load-ready image or field session yet |
+| Pro / Z7020 | `gen2-pro-os2/feature/device-upgrade`, original-logic image `779a031` | Loading, connection and PID metadata reads passed; focused Gen 1 signal repeat prepared; timing remains unclosed |
 
 Implementation commits `10f0e68`, `7aa600e`, `ddb1077`, and `80b6291`
 are historical references. They predate fixes found during the original-board
@@ -46,7 +48,9 @@ Before loading, identify the actual board and wiring. The active target is
 standard STEMlab 125-14 Gen 2, Z7010, profile 20 or 31, path `z10_125_v2`,
 OS major 2 release 2.07 or later. Record the ecosystem release, profile,
 installed overlay contract, candidate revision, Python version, local asset
-hashes, cabling, termination, and measurement equipment. Never save passwords.
+hashes, cabling, termination, and measurement equipment. Keep passwords out of
+the tracked template/records; the user permits factory-default credentials in
+their ignored local development notebook.
 
 Keep experimental actuators disconnected and begin with a passive loopback
 or dummy load. The template clears direct fast-output routes before driving

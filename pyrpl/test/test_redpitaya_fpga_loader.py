@@ -479,7 +479,7 @@ class TestRedPitayaFpgaLoader(unittest.TestCase):
                     (str(wrong_bitstream), None,
                      'does not match this fork\'s preserved FPGA image'),
                     (None, str(wrong_dtbo),
-                     'does not match this fork\'s approved Z7010')):
+                     'does not match this fork\'s approved PS/HP')):
                 with self.subTest(expected_message=expected_message):
                     device = make_device()
                     device.detect_platform()
@@ -500,7 +500,7 @@ class TestRedPitayaFpgaLoader(unittest.TestCase):
         device.detect_platform()
         with self.assertRaises(OSError) as raised:
             device.update_fpga(dtbo_filename=str(old_dtbo))
-        self.assertIn('approved Z7010 fpga.bin overlay',
+        self.assertIn('approved PS/HP fpga.bin overlay',
                       str(raised.exception))
         self.assertEqual([], device.ssh.scp.uploads)
         self.assertNotIn('rw', device.ssh.commands)

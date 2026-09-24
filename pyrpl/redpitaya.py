@@ -41,6 +41,11 @@ from uuid import uuid1 as uid
 
 FORK_BITSTREAM_SHA256 = (
     'dc6e71fb04d3a5a67731a5ddb99e7f80395a1c2fee2b8ae59168ce4252cee9ed')
+# Separate first-device-test artifact: exact wwlyn RTL, Z7020 PS/AXI port only.
+# Never substitute this image for the default/preserved Z7010 BIN.
+Z20_AUTHOR_BITSTREAM_FILENAME = 'fpga/red_pitaya_z20_gen2_author.bit.bin'
+Z20_AUTHOR_BITSTREAM_SHA256 = (
+    'f6728daaf863f6c48a1d8b27a7262d7fb7653c489f37db36acd6cbb9cc4a7307')
 OS2_Z10_DTBO_FILENAMES = {
     'fpga.bit.bin': 'fpga/red_pitaya_os2_z10.dtbo',
     'fpga.bin': 'fpga/red_pitaya_os2_z10_fpga_bin.dtbo',
@@ -618,6 +623,26 @@ class RedPitaya(object):
         raise OSError('%s not found. Checked: %s' %
                       (description, ', '.join(candidates)))
 
+    def _validate_os2_z20_author_profile(self):
+        """Match the exact Pro hardware for the original-logic baseline test."""
+        profile = self._read_os2_hardware_profile()
+        if not (profile['complete'] and profile['id'] == '22' and
+                profile['fpga'] == 'z20_125_v2' and profile['zynq'] == 'Z7020'):
+            raise ExpectedPyrplError(
+                'The Z7020 author-baseline image requires STEMlab 125-14 '
+                'Z7020 Pro v2.0: profile 22, z20_125_v2, Z7020. '
+                'Detected id=%r, fpga=%r, zynq=%r; no files were uploaded.' %
+                (profile['id'], profile['fpga'], profile['zynq']))
+        profile.update(
+            model='STEMlab 125-14-Z7020 Pro v2.0', generation='gen2',
+            variant='pro-z7020', dac_full_scale_high_z_volts=2.0,
+            field_validation='experimental-author-baseline')
+        self.logger.warning(
+            'Selected the experimental Z7020 author-logic baseline: common '
+            'PID/filter fixes are absent. This is not a timing-closed or '
+            'field-validated release; see the packaged build record.')
+        return profile
+
     @staticmethod
     def _server_file(directory, filename):
         directory = re.sub('/+', '/', directory.replace('\\', '/')).rstrip('/')
@@ -631,7 +656,7 @@ class RedPitaya(object):
         digest = hashlib.sha256(data).hexdigest()
         if digest != expected_digest:
             raise OSError(
-                'The OS 2 DTBO does not match this fork\'s approved Z7010 '
+                'The OS 2 DTBO does not match this fork\'s approved PS/HP '
                 '%s overlay (expected SHA-256 %s, got %s): %s' %
                 (fpga_filename, expected_digest, digest, source))
         firmware_string = fpga_filename.encode('ascii') + b'\x00'
@@ -668,9 +693,14 @@ class RedPitaya(object):
         source = self._local_fpga_file(
             bitstream_name, 'FPGA bitstream',
             package_relative=(
-                bitstream_name == defaultparameters['filename']))
+                bitstream_name in (defaultparameters['filename'],
+                                   Z20_AUTHOR_BITSTREAM_FILENAME)))
         dtbo_source = None
         profile = None
+        is_z20_author = self._file_sha256(source) == Z20_AUTHOR_BITSTREAM_SHA256
+        if is_z20_author and self.fpga_loader != 'overlay':
+            raise ExpectedPyrplError(
+                'The Z7020 author-baseline image requires the OS 2 overlay loader.')
         if self.fpga_loader == 'overlay':
             configured_dtbo = self.parameters['dtbo_filename']
             if dtbo_filename is not None:
@@ -684,10 +714,15 @@ class RedPitaya(object):
                 dtbo_name, 'FPGA device-tree overlay',
                 package_relative=(
                     dtbo_name in OS2_Z10_DTBO_FILENAMES.values()))
-            self._validate_os2_bitstream(source)
+            if not is_z20_author:
+                self._validate_os2_bitstream(source)
+            # The port retains the same PS fabric clocks and HP0/HP1 widths,
+            # and the same direct RTL XADC. Its overlay bytes are consequently
+            # identical; do not import an official AXI-XADC overlay.
             self._validate_os2_dtbo(
                 dtbo_source, self.os2_fpga_filename)
-            profile = self._validate_os2_z10_profile()
+            profile = (self._validate_os2_z20_author_profile() if is_z20_author
+                       else self._validate_os2_z10_profile())
             server_directory = '/opt/pyrpl/'
             bin_file_path = self._server_file(
                 server_directory, self.os2_fpga_filename)
@@ -774,6 +809,9 @@ class RedPitaya(object):
             'remote_dtbo': prepared['dtbo_file_path'],
         }
         report.update(self._read_fpga_preflight_state())
+        if profile is not None and profile['variant'] == 'pro-z7020':
+            report['artifact_lineage'] = 'wwlyn-387faf3-z7020-port-no-common-fixes'
+            report['timing_closed'] = False
         return report
 
     def put_file(self, source, destination):

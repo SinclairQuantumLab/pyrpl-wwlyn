@@ -1,5 +1,16 @@
 # PyRPL fork agent guidance
 
+## Repaired Pro device-test preparation (2026-09-24)
+
+- The user authorizes integrating the accepted Pro platform/loader from
+  `gen2pro-os2/main` into this develop, retaining the shared PID repairs and
+  building a separately named repaired Z7020 image for a user-run test.
+- Preserve both existing images and DTBO bytes. No timing redesign, clock
+  change, latency change, main promotion or live-device execution is included.
+- Update the tracked template and, after a byte-identical backup, only the
+  image selection and labels in the local notebook. Preserve user settings,
+  measurements and saved outputs. Run real XSim and record fresh build evidence.
+
 ## Shared PID source integration (2026-09-24)
 
 - The user confirmed successful device testing of the Gen1 OS1, Gen1 OS2
@@ -56,6 +67,39 @@
   declaration visibility and the default DERIVATIVE=0 shadowed D-input fix.
   Record their evidence in `.agents/common-pid-rtl-fix-changelog.md`.
   This is not authorization for PID/filter redesign or a replacement BIN.
+
+## Common-policy comparison
+
+- At the start of each new agent/thread working on this repository, and
+  after a clone, fetch or pull, compare the common AGENTS.md policies across
+  all available local branches and remote-tracking branches before making
+  changes. Repeat after branch/worktree switches or common-policy edits.
+- Enumerate refs with `git for-each-ref refs/heads refs/remotes` and read
+  instruction files with `git show <ref>:AGENTS.md`, without checking out
+  other branches. Deduplicate identical file blobs; inspect referenced
+  common-policy files too if the guidance has been split. Include the
+  current checkout's uncommitted instructions without discarding them.
+- This check covers locally available refs, not unseen remote branches.
+  Do not fetch/pull merely to perform it. Note missing instructions or
+  limited/shallow history when relevant; absence is not permission to
+  ignore known user policies. Keep the check lightweight: no test suites
+  and no repeated full scan each turn unless refs or policies changed.
+- Before an agent switches branches, record the source branch/commit and any
+  uncommitted instruction changes. After switching, reread the destination's
+  AGENTS.md and compare its common policies with the source; use read-only
+  Git diffs rather than switching other worktrees to inspect them.
+- When starting work in another existing worktree, compare common policies
+  with the previously used checkout when known. After editing common policy,
+  identify which active compatibility branches still need that update.
+- Compare shared workflow rules only (permissions, worktree management,
+  branching, notebook preservation and validation proportionality). Preserve
+  device/OS-specific instructions, FPGA constraints and validation evidence.
+  A later timestamp or commit alone does not establish which policy is right.
+- Report missing or conflicting common rules and reconcile them in the
+  current task's authorized scope. Do not overwrite entire AGENTS.md files,
+  modify another worker's files, or automatically commit/update all branches.
+  Cross-branch propagation and hook installation require explicit approval.
+  This is an agent workflow rule, not an installed Git hook.
 
 ## Common-policy comparison
 
@@ -148,6 +192,19 @@
 
 ## FPGA and device safety
 
+- Treat full-design timing as an open finding, not an established defect of
+  the deployed system or a predetermined repair task. Whether a design change
+  is necessary remains unestablished; changes are deferred pending better
+  understanding. See README.md, "FPGA timing: open finding; hardware relevance
+  not yet established". PID/filter connection fixes do not prove timing closure.
+  Distinguish the historical report, source simulation, synthesized circuit
+  and device observations; do not assume the report matches the distributed BIN.
+  Shorter actual delays are a possible explanation, not a measured finding or
+  grounds to dismiss the report. A low-latency performance trade-off relying
+  on empirical validation is also a possible explanation, but must remain
+  explicitly labeled as a hypothesis, not established author intent or proof
+  of harmlessness. Investigate relevance before proposing a correction; do not
+  change clocks, feedback latency or RTL for timing without a new request.
 - The fork author's known hardware environment was Red Pitaya OS `1.04-18`
   on an original-generation STEMlab 125-14 with a Zynq-7010. Treat that as
   provenance for the legacy `/dev/xdevcfg` loader, not as permission to
@@ -209,6 +266,13 @@
   `python -m unittest pyrpl.test.test_redpitaya_fpga_loader`. The wheel must
   contain the exact fork BIN plus both source-identical firmware-name DTS/DTBO
   variants, `pyrpl/redpitaya_preflight.py`, and no other DTBO.
+- This author-baseline candidate additionally packages
+  `red_pitaya_z20_gen2_author.bit.bin` and its JSON build record. SHA-256:
+  `f6728daaf863f6c48a1d8b27a7262d7fb7653c489f37db36acd6cbb9cc4a7307`.
+  Run `tests.test_z7020_author_baseline` and `tests.test_z7020_author_loader`.
+  These check original-source identity and offline loader behavior, not a
+  passing RTL simulation or timing closure. XSim rejects the untouched
+  author's `int_shr` declaration order; record that failure, do not repair it.
 - Standard Gen 2 readiness also runs `tests/test_fork_pid_compatibility.py`
   and `tests/test_gen2_manual_workflow.py` with unittest. These characterize
   Python register writes and validate the clean template without executing
@@ -245,6 +309,10 @@
   Preserve its settings and saved outputs. Never stage it or overwrite it
   during template updates. Do not run it or change its contents unless the
   user explicitly requests notebook/device work.
+- The current manual workflow repeats the user's Gen 1 DC calibration,
+  1 Hz / 1 kHz triangle and negative-I PID experiment on Pro. Do not reuse Gen 1
+  calibration coefficients: derive separate OUT1 and IN1 fits from fresh
+  paired RP/Rigol readings. Preserve ASG-as-disturbance during the PID step.
 - Keep agent-only investigation scripts and notes under `.agents/`, outside
   the package and user-facing test areas. Automated product regressions still
   belong in `pyrpl/test` or `tests`; do not confuse them with disposable agent
@@ -266,8 +334,13 @@
   pairs: original profiles 1 and 2 with `z10_125`, standard Gen 2 profiles 20
   and 31 with `z10_125_v2`, and Pro Gen 2 profiles 21 and 32 with
   `z10_125_pro_v2`. Preserve the exact fork bitstream. Refuse mismatched
-  profile/path pairs, early OS 2, OS 3, Z7020, and other converter families
+  profile/path pairs, early OS 2, OS 3, and other converter families
   before uploading or changing device state.
+- The only additional Z7020 loading path is the explicit hash-pinned
+  author-baseline image for profile 22 / `z20_125_v2` / Z7020. It reuses the
+  existing fork DTBO bytes because fabric clocks, HP widths and direct XADC
+  are unchanged. The default original BIN must still be rejected on Z7020;
+  other Z7020 profiles are not enabled by this first-device experiment.
 - OS 2.07+ loading must inspect the installed `overlay.sh` and recognize only
   its known fixed custom basenames, `/opt/pyrpl/fpga.bit.bin` or
   `/opt/pyrpl/fpga.bin`. It must select the hash-pinned DTBO whose
@@ -293,6 +366,7 @@
   DTBO remain unchanged. Gen 2 DAC full scale is +/-2 V into high impedance
   and +/-1 V into 50 ohms; do not silently alter PyRPL's register normalization
   because software cannot infer the load. The authorized Z7020 Gen 2 port is
-  under development, not load-ready. TI-based Gen 2 boards require a
+  under development; only the separately pinned original-logic experiment is
+  prepared for a user-run load, not commissioned. TI-based Gen 2 boards require a
   different converter/platform design and remain outside the preservation-
   first path.

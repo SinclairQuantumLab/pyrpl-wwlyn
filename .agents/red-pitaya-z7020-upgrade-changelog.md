@@ -287,3 +287,52 @@ Verification before committing the merge:
   Existing `main`, `gen1-os1/main`, `gen1-os2/main`, standard Gen 2 candidate,
   and the separate restored `working-vs1` worktree were not advanced/modified.
 - No live-device operation, push, rebase or amendment was performed.
+## Original-logic first-device candidate — 2026-09-15
+
+The user requires the first device test before the shared repairs. This now
+supersedes the intended re-merge mentioned above for the device-upgrade topic.
+The user explicitly authorized rewriting this unpushed branch: its `ef7f1c1`
+common-fix merge was removed by moving it to `188dbfe`. Existing develop/main
+and fix topics were not changed. No new revert commit or new test branch is
+needed; work remains on `gen2-pro-os2/feature/device-upgrade`.
+
+Every RTL file matches wwlyn `387faf3`. A separately named experimental Z7020
+image was routed/exported, with **failed original-source XSim compilation and
+unclosed timing** recorded rather than repaired. Its exact hash and profile
+22 / `z20_125_v2` / Z7020 enable an explicit test-only loader path; the original
+Z7010 BIN and the two fork-derived overlays remain unchanged. The stepwise
+notebook is prepared for the user; no live device action was taken.
+
+See [the current test record](z7020-author-baseline-test.md) and
+[full build evidence](z7020-author-baseline-build.json). Current software
+validation: 70 checkout unittests, 25 Nose tests, compilation of 119 Python
+files, and fresh wheel installation/tests passed (one expected checkout-only
+skip in the fresh suite). These results do not turn the retained RTL simulation
+failure or timing failures into passes, and do not commission this candidate.
+
+### First user-run loading and connection result — 2026-09-15
+
+The saved notebook now confirms steps 1–5: correct original-logic Z7020 image,
+read-only preflight, successful FPGA Manager programming, PyRPL connection and
+PID register metadata reads. The user also reported that it ran well.
+Detailed observations, artifact identity and the local byte-identical notebook
+backup hash are in [the field record](z7020-author-baseline-field-result.md).
+This does not claim oscilloscope/analog validation or change the retained
+simulation/timing findings. No compatibility main is advanced. At the user's
+request, commit this work before returning to the existing `gen1-os2/main`
+for their next physical signal tests; do not import common repairs there.
+
+### Repeat the successful Gen 1 signal experiment — 2026-09-15
+
+After the user's Gen 1 DC / triangle / negative-I PID run, the tracked starter
+and local Pro copy now repeat that focused workflow, including both 1 Hz and
+1 kHz triangles as clarified by the user. The saved Gen 1 plot documents 1 Hz;
+the additional 1 kHz success is user-reported. Fresh board-specific IN1/OUT1
+calibration replaces the Gen 1 coefficients. The ASG remains a summed PID
+disturbance as in the saved experiment; measured response and calculated
+setpoint are recorded separately.
+
+See [the Gen 1 result](gen1-os2-signal-field-result-20260915.md) and
+[Pro preparation/validation](z7020-signal-repeat-preparation.md). The unchanged
+image is still the original-logic `779a031` candidate. No live cells were run;
+73 offline unittests, 25 Nose tests and fresh package validation passed.

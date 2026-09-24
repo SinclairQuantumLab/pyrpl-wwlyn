@@ -118,6 +118,58 @@ class TestGen2ManualWorkflow(unittest.TestCase):
         np.testing.assert_array_equal(times, scope.times)
         plt.close('all')
 
+    def test_signal_repeat_uses_saved_hz_setting_and_no_gen1_calibration(self):
+        source = '\n'.join(self.code.values())
+        for old_coefficient in ('1.14142', '0.001534', '1.14380', '0.004668'):
+            self.assertNotIn(old_coefficient, source)
+        self.assertIn('asg.frequency = 1.0', self.code['signal-triangle'])
+        self.assertIn('asg.amplitude = 0.4', self.code['signal-triangle'])
+        self.assertIn('asg.frequency = 1000.0', self.code['signal-fast-triangle'])
+        self.assertIn('capture_scope("in1", "asg0"', self.code['signal-fast-triangle'])
+        self.assertIn('finally:', self.code['signal-fast-triangle'])
+        self.assertIn('asg.frequency = 1.0', self.code['signal-fast-triangle'])
+        self.assertIn('pid.i = -150000', self.code['signal-pid'])
+        self.assertIn('rigol_to_rp_in1', self.code['signal-pid'])
+        self.assertNotIn('asg.output_direct = "off"', self.code['signal-pid'])
+        self.assertIn('time.perf_counter()', self.code['signal-poll'])
+
+    def test_dc_fit_keeps_input_and_output_calibration_separate(self):
+        import numpy as np
+        tree = ast.parse(self.code['signal-dc-fit'])
+        function = next(node for node in tree.body
+                        if isinstance(node, ast.FunctionDef)
+                        and node.name == 'fit_dc_calibration')
+        namespace = {'np': np}
+        # Execute the pure calculation only, never a device cell.
+        exec(compile(ast.Module(body=[function], type_ignores=[]),
+                     'fit_dc_calibration', 'exec'), namespace)
+        fit = namespace['fit_dc_calibration']
+        rows = [{'rp_output': x, 'rigol_volts': 1.8 * x + 0.02,
+                 'rp_in1': (1.8 * x + 0.02 - 0.003) / 1.1}
+                for x in (-0.5, -0.25, 0.0, 0.25, 0.5)]
+        output_fit, input_fit = fit(rows)
+        np.testing.assert_allclose(output_fit, [1.8, 0.02, 0.0], atol=1e-12)
+        np.testing.assert_allclose(input_fit, [1.1, 0.003, 0.0], atol=1e-12)
+        with self.assertRaises(ValueError):
+            fit(rows[:2])
+        with self.assertRaises(ValueError):
+            fit([dict(row, rp_in1=0.0) for row in rows])
+        with self.assertRaises(ValueError):
+            fit([dict(row, rigol_volts=float('nan')) for row in rows])
+
+    def test_dc_sweep_disconnects_output_on_interrupted_measurement(self):
+        import numpy as np
+        src = SimpleNamespace(ival=0.0, output_direct='off', current_output_signal=0.0)
+        namespace = {'src': src, 'np': np, 'json': json,
+                     'time': SimpleNamespace(sleep=lambda seconds: None),
+                     'rp': SimpleNamespace(scope=SimpleNamespace(voltage_in1=0.0)),
+                     'mon': SimpleNamespace(current_output_signal=0.0)}
+        with patch('builtins.input', side_effect=EOFError):
+            with self.assertRaises(EOFError):
+                exec(compile(self.code['signal-dc-measure'], 'dc-sweep', 'exec'), namespace)
+        self.assertEqual('off', src.output_direct)
+        self.assertEqual(0, src.ival)
+
 
 if __name__ == '__main__':
     unittest.main()

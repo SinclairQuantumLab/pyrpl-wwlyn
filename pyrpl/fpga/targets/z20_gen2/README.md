@@ -3,10 +3,37 @@
 Target part: `xc7z020clg400-1`; board family: STEMlab 125-14 Z7020 Gen 2 Pro;
 OS integration target: major 2, release 2.07+. This is not the Z7010 Pro family.
 
-This is an offline development target, not a load-ready image generator.
+This is a development target, not a commissioned hardware release.
 It builds a new PS/AXI shell around the fork's existing top-level RTL. Outputs
 are checkpoints and reports in a new directory; it never calls the legacy
-Makefile and never writes a BIN or DTBO. The runtime loader still rejects Z7020.
+Makefile and `build.tcl` never writes a BIN or DTBO.
+
+## Original-logic first-device test (2026-09-15)
+
+The user requires the first device test **before** common PID/filter repairs.
+`author_rtl.json` records every original RTL blob at wwlyn commit `387faf3`;
+`tests.test_z7020_author_baseline` rejects any RTL changes, including the
+earlier common repairs. Platform files remain the separately generated Pro
+PS/AXI shell. No original Z7010 artifact is overwritten.
+
+The separately packaged `red_pitaya_z20_gen2_author.bit.bin` is an experimental
+first-test image, with provenance and findings in the adjacent JSON file and
+`.agents/z7020-author-baseline-test.md`. The loader accepts it only for the
+exact tested-identification profile 22 / `z20_125_v2` / Z7020 and uses the
+same fork-derived PS/HP overlay bytes. No other Z7020 image is approved.
+
+To export a routed author-source checkpoint, use `export_author_test.tcl`
+with INPUT_DCP and a **new** output directory. It runs the normal bitstream
+DRC rules without waivers and writes `.bit` plus `image.bif`. In that directory:
+
+```text
+bootgen -image image.bif -arch zynq -process_bitstream bin -o red_pitaya_z20_gen2_author.bit.bin
+```
+
+Do not substitute a rebuilt image without updating its provenance and tests.
+The shipped candidate has failed timing and original-source XSim compilation;
+generating it is not sign-off. The original-source defects are intentionally
+retained for comparison, not silently fixed during this port.
 
 ## Full-design build
 
@@ -75,7 +102,7 @@ guards (not hardware verification) run without Vivado:
 uv run --extra test python -m unittest tests.test_z7020_build_contract
 ```
 
-Still required before a full image:
+Still required before a commissioned release:
 
 1. Validate exact board constraints, clocks/resets and DDR boot assumptions.
 2. Simulate bus transactions, the complete fork datapath and top-level triggers.
@@ -84,5 +111,6 @@ Still required before a full image:
 4. Produce separately named BIN/DTBO artifacts with source/toolchain/hash
    provenance, then implement their paired loader selection and regressions.
 
-The runtime loader continues to reject Z7020. Keep the original Z7010 artifacts
-unchanged. Hardware tests and any compatibility-main promotion remain deferred.
+Keep the original Z7010 artifacts unchanged. Only the separately pinned
+experimental author image is accepted on profile 22. Hardware results and any
+compatibility-main promotion remain pending.
