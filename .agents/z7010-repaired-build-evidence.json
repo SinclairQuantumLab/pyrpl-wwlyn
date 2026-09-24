@@ -1,0 +1,110 @@
+{
+  "date": "2026-09-24",
+  "purpose": "User-authorized Gen1 OS1/OS2 common-PID-repaired bench candidate; no live test",
+  "build_source_commit": "e7dc8f92a97100474b8ec8e0f9f366a0b3f1620c",
+  "rtl_commit": "e7479166c03c15bdd244e2153e974b4596815041",
+  "tool": "Vivado 2023.2",
+  "part": "xc7z010clg400-1",
+  "artifact": {
+    "path": "pyrpl/fpga/red_pitaya_z10_gen1_repaired.bin",
+    "sha256": "922edd86645057fbf59b421b7854b0d96ed77745fa94019261cfeb7a6c9cd966",
+    "bytes": 2083740,
+    "conversion": "Uncompressed write_bitstream then write_cfgmem -format BIN -size 2 -interface SMAPx32 -disablebitswap"
+  },
+  "preserved_author_bin_sha256": "dc6e71fb04d3a5a67731a5ddb99e7f80395a1c2fee2b8ae59168ce4252cee9ed",
+  "route": {
+    "routable_nets": 23339,
+    "fully_routed_nets": 23339,
+    "routing_errors": 0
+  },
+  "drc": {
+    "errors": 0,
+    "critical_warnings": 0,
+    "warnings": 133
+  },
+  "timing": {
+    "closed": false,
+    "wns_ns": -4.297,
+    "tns_ns": -6109.448,
+    "setup_failing_endpoints": 7968,
+    "whs_ns": -2.162,
+    "ths_ns": -58.825,
+    "hold_failing_endpoints": 28,
+    "note": "Open finding, not a proven deployed-hardware flaw. No timing repair/clock/latency changes; constraints and I/O methodology need separate understanding."
+  },
+  "platform": {
+    "basis": "Original Z7010 ip/system_bd.tcl, not Pro PS shell",
+    "clocks_mhz": {
+      "FCLK0": 125,
+      "FCLK1": 250,
+      "FCLK2": 50,
+      "FCLK3": 200,
+      "ADC": 125
+    },
+    "black_boxes": 0,
+    "direct_xadc": 1,
+    "axi_xadc": 0,
+    "legacy_false_paths": "Preserved valid clk_fpga_0 -> adc_clk; six absent-name exceptions commented, not replaced.",
+    "bd_warning": "Existing unused GP1/converter incomplete address path retained."
+  },
+  "simulation": {
+    "pid_checks": 342,
+    "filter_families": 5,
+    "checks_per_filter": 4096,
+    "passed": true
+  },
+  "live_tested": false,
+  "main_promoted": false,
+  "reports": [
+    {
+      "path": "C:/Users/imaq/AppData/Local/Temp/z10-repair-final-20260924/post_route.dcp",
+      "sha256": "0411241799cf133b7e88c91c8feb27093f19523fd0a81007a0796d9f320005bf",
+      "bytes": 10823324
+    },
+    {
+      "path": "C:/Users/imaq/AppData/Local/Temp/z10-repair-final-20260924/post_route_timing.rpt",
+      "sha256": "8cf42509d4a27a699d0bc84d6df5f1b2e76bae5d1c68bdf0ba1e820a70aa6f34",
+      "bytes": 92828
+    },
+    {
+      "path": "C:/Users/imaq/AppData/Local/Temp/z10-repair-final-20260924/post_route_drc.rpt",
+      "sha256": "98f070eef183de0a8e721b547a10c00035c5937008f22b3d427993c712c75201",
+      "bytes": 65644
+    },
+    {
+      "path": "C:/Users/imaq/AppData/Local/Temp/z10-repair-final-20260924/post_route_methodology.rpt",
+      "sha256": "e654f761e00493af88faa6df3516beb454f1114c43d9046cb339940c7b04ac96",
+      "bytes": 499614
+    },
+    {
+      "path": "C:/Users/imaq/AppData/Local/Temp/z10-repair-final-20260924/generated_system_bd.tcl",
+      "sha256": "d1d0a9068311f5fd3311e16c43f1e64cb51c8b758cf9a0c2f2a6f4ef1b4932a3",
+      "bytes": 28882
+    },
+    {
+      "path": "C:/Users/imaq/AppData/Local/Temp/z10-repair-final-20260924-export/clocks.rpt",
+      "sha256": "0d9594df169447b5fda8eca623c88cef07595a2840a05180951eb25908c74f1c",
+      "bytes": 3714
+    },
+    {
+      "path": "C:/Users/imaq/AppData/Local/Temp/z10-repair-final-20260924-export/route_status.rpt",
+      "sha256": "1091f9f35088bb8722f6b6c22fc1958c0edbb153daa919a515a89b774ed33264",
+      "bytes": 651
+    },
+    {
+      "path": "C:/Users/imaq/AppData/Local/Temp/z10-repair-final-20260924-export/bitstream_drc.rpt",
+      "sha256": "c63b30d64c22fefe7c9b8e3ffd460cf8e995e244f4df340ccfcc1c99bc6f55a5",
+      "bytes": 65685
+    },
+    {
+      "path": "C:/Users/imaq/AppData/Local/Temp/z10-repair-final-20260924-export/red_pitaya_z10_gen1_repaired.bit",
+      "sha256": "c4b260c24b89dbce3dd4bbe0a05ad6e4478024c7a4356263a73dfb47339b6064",
+      "bytes": 2083865
+    },
+    {
+      "path": "C:/Users/imaq/AppData/Local/Temp/pyrpl-pid-rtl-958cq0bz/result.json",
+      "sha256": "9107a272dba1ef6f53f3649df9e71991c83f3cdd3522c2b689af03598cabbfbe",
+      "bytes": 1870
+    }
+  ]
+}
