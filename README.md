@@ -110,9 +110,9 @@ unsupported loader, mismatched board profile, unapproved asset, or incomplete
 SSH result. Run it only when live read-only access to the named board is
 intended.
 
-For a new checkout, copy `test.ipynb.template` to `test.ipynb` and edit its
-hostname. The template is versioned; `test.ipynb` is an ignored local working
-copy where you can keep your settings and results.
+Use the versioned `test.ipynb` for this branch. If it is absent, copy
+`test.ipynb.template` to create it and edit its hostname. Preserve existing
+notebook settings and results when updating the template.
 
 First, hook up your Red Pitaya / STEMlab to a LAN accessible from your computer (follow the instructions for this on redpitya.com and make sure you can access your Red Pitaya with a web browser by typing its ip-address /  hostname into the address bar).
 In a command line terminal, type
