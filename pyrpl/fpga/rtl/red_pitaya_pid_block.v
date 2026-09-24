@@ -386,7 +386,7 @@ generate
 	else begin
 		// Drive the sum's D input; a local wire here shadows it and leaves
 		// the default DERIVATIVE=0 PID output unknown in RTL simulation.
-		assign kd_reg_s = {15+GAINBITS-DSR+1{1'b0}};
+		assign kd_reg_s = 0;
 	end
 endgenerate 
 
