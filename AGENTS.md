@@ -1,5 +1,20 @@
 # PyRPL fork agent guidance
 
+## Current main acceptance (2026-09-24)
+
+- `gen1-os1/main` is the user-accepted, device-tested original-logic baseline
+  selected from `3eacfe2`. See
+  `.agents/pre-repair-main-acceptance-20260924.md` for the user's confirmation,
+  exact source selection, previous evidence and limits. No new agent-run
+  test or broader timing/profile guarantee is claimed.
+- This status supersedes earlier pending-test/no-main instructions below.
+  Historical first-test scopes and build logs retain their original evidence.
+  Do not import the shared PID/filter repairs into this main without new
+  authorization: those remain on the separate develop line. Preserve the
+  original RTL, images, loader and notebook. Timing remains an open finding,
+  not an established deployed defect or an authorized repair task.
+
+
 ## Scope
 
 - Commit `407a9d1b8c70f74e6d59a67365d1eaa1d34a0553` is the field-tested
@@ -49,18 +64,49 @@
 
 ## Branching
 
-- `develop` is the integration branch for changes that apply across device/OS
-  combinations. Common work uses standard topic namespaces such as
-  `feature/*`, `fix/*`, and `refactor/*` and is merged into `develop`.
+- Authorized local layout: the primary checkout serves
+  `gen2-pro-os2/feature/device-upgrade`; `.worktrees/gen1-os2` serves
+  `gen1-os2/main`, with its own environment and local notebook. The external
+  `working-vs1` worktree belongs to another worker and must remain untouched.
+- Recommend persistent device/OS worktrees under one contained directory,
+  such as `.worktrees/<genX-osY>/`, rather than scattered project folders.
+  Each worktree should have its own `.venv` and ignored local notebook.
+  Document this convention here; do not add bootstrap scripts or create/move
+  worktrees without an explicit request. Preserve existing worktrees and
+  their local files. Git clones reproduce committed guidance and published
+  branches, not local worktree layouts, environments or ignored notebooks.
+- This contained device/OS worktree layout is intentional, not permission
+  for agents to create arbitrary additional worktrees. Existing worktrees
+  do not imply authorization to add more. Creating, moving, removing or
+  reorganizing worktrees requires the user's explicit approval; use the
+  appropriate existing worktree for ordinary development.
+- Scale validation to the task. Commit-only requests require diff/staging
+  review, not test reruns. Minor changes need only directly relevant checks.
+  The full validation checklist below is for substantive implementation or
+  release work, or an explicit request, not every handoff or branch operation.
+
+- Common work uses focused topic branches such as `feature/*`, `fix/*`, and
+  `refactor/*`. Global `develop` is optional shared integration when several
+  changes need testing together, not a mandatory propagation step.
 - Device- or OS-specific work belongs under its target compatibility root,
   for example `gen1-os2/feature/os-upgrade` or
   `gen2-os2/fix/device-profile`.
 - A compatibility root's `main` branch means that combination is considered
   commissionable. Do not create or advance it based only on offline evidence
   when its field gate is still open.
-- Propagate common changes from `develop` into compatibility branches with
-  merge commits. Use `git cherry-pick -x` only for an intentionally selective
-  backport that must not import the source branch's other changes.
+- When authorized and ready, merge each specific common topic directly into
+  the intended `<root>/develop` branches. Use explicit merge commits
+  (`--no-ff`) naming the update and target so each root's adoption is visible
+  and the shared commits retain their identity. Inspect the incoming ancestry
+  first; a topic name does not guarantee it contains no unrelated changes.
+- Create `<root>/fix/*` or other root-specific topics only when adaptation,
+  substantial conflict resolution or separate development/validation is
+  needed, not as automatic intermediate copies of every common update.
+  Propagation into develop does not authorize promotion into `<root>/main`.
+- Use `git cherry-pick -x` for an intentionally selective backport that must
+  not import the source branch's other changes, such as common documentation
+  authored on a device-specific topic. Do not merge a device-upgrade branch
+  wholesale into other roots just to share its documentation.
 - Do not rebase published compatibility `main` branches or rewrite validation
   history.
 
