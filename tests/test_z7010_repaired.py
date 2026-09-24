@@ -159,6 +159,15 @@ class TestLegacyGuard(unittest.TestCase):
             candidate.legacy_program(d)
         self.assertEqual(d.ssh.execute.call_args.args[0], 'ro')
 
+    def test_failed_staging_setup_also_restores_ro(self):
+        d = self.device()
+        d.ssh.execute.side_effect = [d.ssh.execute.return_value,
+                                    (1, '', 'mkdir failed'), (0, '', '')]
+        with self.assertRaisesRegex(ExpectedPyrplError, 'mkdir failed'):
+            candidate.legacy_program(d)
+        d.ssh.scp.put.assert_not_called()
+        self.assertEqual(d.ssh.execute.call_args.args[0], 'ro')
+
 
 if __name__ == '__main__':
     unittest.main()

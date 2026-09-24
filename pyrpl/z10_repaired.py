@@ -84,8 +84,8 @@ def legacy_program(device, filename=None):
     # All identity and file checks precede the first device mutation.
     remote = shlex.quote(report['remote_bitstream'])
     device.end()
-    checked('rw && mkdir -p /opt/pyrpl')
     try:
+        checked('rw && mkdir -p /opt/pyrpl')
         device.ssh.scp.put(report['local_bitstream'], report['remote_bitstream'])
         # Keep the staged file for diagnosis; verify transfer before programming.
         checked('test "$(sha256sum %s | cut -d " " -f 1)" = %s' %
