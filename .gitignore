@@ -137,3 +137,6 @@ unit_tests.xml
 unit_test_results.xml
 unit_test_coverage.xml
 
+# Local manual-test settings/results; the clean starter is tracked instead.
+/test.ipynb
+

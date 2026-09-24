@@ -20,6 +20,21 @@ The official PyRPL website address is [http://pyrpl.readthedocs.io/](http://pyrp
 
 ## Installation
 
+### Repaired Gen1 / OS1 bench candidate
+
+`gen1-os1/develop` includes the common PID source repairs in the separate
+`red_pitaya_z10_gen1_repaired.bin`. The original BIN and accepted `main`
+remain unchanged. Copy `test.ipynb.template` to a **new** local notebook
+(preserve existing results), select this checkout's `.venv` kernel and restart
+the kernel after changing branches. Run the explained cells in order:
+read-only preflight, programming, connection, then DC/triangle/PID tests.
+The template selects and hash-checks the repaired image explicitly.
+
+The repaired loader requires original 125-14 Z7010 EEPROM identity, OS1 and
+a character `/dev/xdevcfg`; it does not use a DTBO. Timing findings remain
+open; successful export is not timing closure or a hardware-test result.
+Build provenance: [.agents/z7010-repaired-build-evidence.json](.agents/z7010-repaired-build-evidence.json).
+
 This fork targets CPython 3.14. From the repository root on Windows:
 
 ```powershell

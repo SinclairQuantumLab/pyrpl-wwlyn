@@ -23,6 +23,8 @@ from .pyrpl_utils import get_unique_name_list_from_class_list, update_with_typec
 from .memory import MemoryTree
 from .errors import ExpectedPyrplError
 from .widgets.startup_widget import HostnameSelectorWidget
+from .z10_repaired import (is_repaired_selection, legacy_preflight,
+                           legacy_program)
 
 import logging
 import os
@@ -278,12 +280,17 @@ class RedPitaya(object):
             str(gpiopin) + "/value")
         sleep(self.parameters['delay'])
 
+    def preflight_fpga_update(self, filename=None):
+        """Read-only preflight for the explicitly selected repaired Gen1 image."""
+        source = filename if filename is not None else self.parameters.get('filename')
+        return legacy_preflight(self, source)
+
     def update_fpga(self, filename=None):
-        if filename is None:
-            try:
-                source = self.parameters['filename']
-            except KeyError:
-                source = None
+        source = filename if filename is not None else self.parameters.get('filename')
+        if is_repaired_selection(source):
+            return legacy_program(self, source)
+        # Preserve the original-image path; only the repaired candidate uses
+        # the new hash/model/status-checked loader above.
         self.end()
         sleep(self.parameters['delay'])
         self.ssh.ask('rw')
